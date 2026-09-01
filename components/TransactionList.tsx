@@ -56,18 +56,68 @@ const getCategoryColor = (category: string) => {
 };
 
 const getGroupColors = (key: string = '') => {
-    if (key.includes('Distribuição')) return { header: 'bg-amber-900 text-amber-50', card: 'bg-amber-50/70 border-amber-100/50' };
-    if (key === 'MORADIA') return { header: 'bg-teal-900 text-teal-50', card: 'bg-teal-50/70 border-teal-100/50' };
-    if (key === 'MARCIA BRITO') return { header: 'bg-emerald-900 text-emerald-50', card: 'bg-emerald-50/70 border-emerald-100/50' };
-    if (key === 'MARCIA BISPO') return { header: 'bg-rose-900 text-rose-50', card: 'bg-rose-50/70 border-rose-100/50' };
-    if (key === 'LILI TORRES') return { header: 'bg-blue-900 text-blue-50', card: 'bg-blue-50/70 border-blue-100/50' };
-    if (key === 'REBECCA BRITO') return { header: 'bg-fuchsia-900 text-fuchsia-50', card: 'bg-fuchsia-50/70 border-fuchsia-100/50' };
-    if (key === 'JADY') return { header: 'bg-yellow-900 text-yellow-50', card: 'bg-yellow-50/70 border-yellow-100/50' };
-    if (key.includes('IAGO')) return { header: 'bg-violet-900 text-violet-50', card: 'bg-violet-50/70 border-violet-100/50' };
-    if (key === 'DÍVIDAS NA RUA') return { header: 'bg-orange-900 text-orange-50', card: 'bg-orange-50/70 border-orange-100/50' };
+    if (key.includes('Distribuição')) return { 
+        header: 'bg-purple-700 text-white', 
+        card: 'bg-purple-50/70 border-purple-200/60',
+        badge: 'bg-white/20 text-white border-white/30',
+        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+    };
+    if (key === 'MORADIA') return { 
+        header: 'bg-red-600 text-white', 
+        card: 'bg-red-50/70 border-red-200/60',
+        badge: 'bg-white/20 text-white border-white/30',
+        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+    };
+    if (key === 'MARCIA BRITO') return { 
+        header: 'bg-orange-500 text-white', 
+        card: 'bg-orange-50/70 border-orange-200/60',
+        badge: 'bg-white/20 text-white border-white/30',
+        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+    };
+    if (key === 'MARCIA BISPO') return { 
+        header: 'bg-amber-600 text-white', 
+        card: 'bg-amber-50/70 border-amber-200/60',
+        badge: 'bg-white/20 text-white border-white/30',
+        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+    };
+    if (key === 'LILI TORRES') return { 
+        header: 'bg-yellow-400 text-yellow-950', 
+        card: 'bg-yellow-50/70 border-yellow-200/60',
+        badge: 'bg-yellow-950/20 text-yellow-950 border-yellow-950/30',
+        btn: 'bg-yellow-950/15 hover:bg-yellow-950/25 text-yellow-950 border-yellow-950/30'
+    };
+    if (key === 'REBECCA BRITO') return { 
+        header: 'bg-emerald-500 text-white', 
+        card: 'bg-emerald-50/70 border-emerald-200/60',
+        badge: 'bg-white/20 text-white border-white/30',
+        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+    };
+    if (key.includes('IAGO')) return { 
+        header: 'bg-emerald-900 text-white', 
+        card: 'bg-emerald-50/70 border-emerald-200/60',
+        badge: 'bg-white/20 text-white border-white/30',
+        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+    };
+    if (key === 'JADY') return { 
+        header: 'bg-blue-900 text-white', 
+        card: 'bg-blue-50/70 border-blue-200/60',
+        badge: 'bg-white/20 text-white border-white/30',
+        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+    };
+    if (key === 'DÍVIDAS NA RUA') return { 
+        header: 'bg-sky-500 text-white', 
+        card: 'bg-sky-50/70 border-sky-200/60',
+        badge: 'bg-white/20 text-white border-white/30',
+        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+    };
     
     // Default for dates (like "Hoje", "25 de agosto")
-    return { header: 'bg-slate-800 text-slate-50', card: 'bg-slate-50/70 border-slate-100/50' };
+    return { 
+        header: 'bg-slate-800 text-white', 
+        card: 'bg-slate-50/70 border-slate-100/50',
+        badge: 'bg-white/20 text-white border-white/30',
+        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+    };
 };
 
 const TransactionList: React.FC<TransactionListProps> = ({ 
@@ -226,7 +276,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                             </h3>
                             
                             {/* TOTAL SOMA DA CATEGORIA - MESMA FONTE DO TÍTULO DA CATEGORIA */}
-                            <span className="text-xs sm:text-sm font-black bg-white/20 px-2.5 py-0.5 rounded-lg text-white border border-white/20 shadow-sm tracking-tight">
+                            <span className={`text-xs sm:text-sm font-black px-2.5 py-0.5 rounded-lg border shadow-sm tracking-tight ${groupColors.badge}`}>
                                 {formatCurrency(groupTotalSum)}
                             </span>
 
@@ -248,7 +298,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border ${
                                     allSelectedInGroup
                                         ? 'bg-orange-500 text-slate-950 border-orange-400 shadow-sm'
-                                        : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+                                        : groupColors.btn
                                 }`}
                                 title="Selecionar contas do grupo para gerar bilhete"
                             >

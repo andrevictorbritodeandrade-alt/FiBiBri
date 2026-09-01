@@ -645,19 +645,66 @@ const App: React.FC = () => {
                         }
                         return i;
                     });
+                } else if (year === 2026 && month === 9) {
+                    data.incomes = [
+                        {
+                            id: 'inc_taag_sep26',
+                            description: 'INDENIZAÇÃO EMPRESA AÉREA TAAG (Recebido: 01/09)',
+                            amount: 1492.76,
+                            paid: true,
+                            userModifiedPaid: true,
+                            date: '2026-09-01',
+                            dueDate: '2026-09-01',
+                            category: 'Outros',
+                            paidAt: '2026-09-01T12:00:00Z'
+                        },
+                        {
+                            id: 'inc_a_2026_9',
+                            description: 'SALÁRIO ANDRÉ (Recebido: 01/09)',
+                            amount: 3219.07,
+                            paid: true,
+                            userModifiedPaid: true,
+                            date: '2026-09-01',
+                            dueDate: '2026-09-01',
+                            category: 'Salário',
+                            paidAt: '2026-09-01T12:00:00Z'
+                        },
+                        {
+                            id: 'inc_m_2026_9',
+                            description: 'SALÁRIO MARCELLY (Recebido: 28/08)',
+                            amount: 3436.22,
+                            paid: true,
+                            userModifiedPaid: true,
+                            date: '2026-08-28',
+                            dueDate: '2026-08-28',
+                            category: 'Salário',
+                            paidAt: '2026-08-28T12:00:00Z'
+                        },
+                        {
+                            id: 'inc_ferias_m_sep26',
+                            description: 'FÉRIAS MARCELLY (Recebido: 28/08)',
+                            amount: 1081.16,
+                            paid: true,
+                            userModifiedPaid: true,
+                            date: '2026-08-28',
+                            dueDate: '2026-08-28',
+                            category: 'Salário',
+                            paidAt: '2026-08-28T12:00:00Z'
+                        },
+                        {
+                            id: 'inc_mum_m_2026_9',
+                            description: 'MUMBUCA MARCELLY',
+                            amount: 598.00,
+                            paid: false,
+                            date: '2026-09-10',
+                            dueDate: '2026-09-10',
+                            category: 'Mumbuca'
+                        }
+                    ];
                 } else {
                     data.incomes = data.incomes.map(i => {
                         const desc = i.description.toUpperCase();
                         if (desc === "SALARIO ANDRE" || desc === "SALÁRIO ANDRÉ" || desc === "SALÁRIO DO ANDRÉ" || desc === "SALARIO DO ANDRE" || desc.includes("SALÁRIO ANDRÉ") || desc.includes("SALARIO ANDRE")) {
-                            if (year === 2026 && month === 9) {
-                                return { 
-                                    ...i, 
-                                    amount: 3100.00,
-                                    description: "SALÁRIO ANDRÉ (Recebimento: 01/09 - Estado)",
-                                    date: "2026-09-01",
-                                    dueDate: "2026-09-01"
-                                };
-                            }
                             return { ...i, amount: ((year === 2026 && month >= 9) || year > 2026) ? 3100.00 : 3334.00 };
                         }
                         return i;
@@ -780,11 +827,15 @@ const App: React.FC = () => {
                 return e;
             });
 
-            // 2. Cartão do Itaú do André is 100 reais (but 200 in July 2026)
+            // 2. Cartão do Itaú do André is 100 reais (but 200 in July 2026, 237.96 in Sept 2026, 343.98 in Oct 2026)
             data.expenses = data.expenses.map(e => {
                 const desc = e.description.toUpperCase();
                 if (desc.includes("CARTÃO DO ITAÚ DO ANDRÉ") || desc.includes("CARTAO DO ITAU DO ANDRE")) {
-                    return { ...e, amount: (year === 2026 && month === 7) ? 200.00 : 100.00 };
+                    let amt = 100.00;
+                    if (year === 2026 && month === 7) amt = 200.00;
+                    if (year === 2026 && month === 9) amt = 237.96;
+                    if (year === 2026 && month === 10) amt = 343.98;
+                    return { ...e, amount: amt };
                 }
                 return e;
             });
@@ -803,14 +854,20 @@ const App: React.FC = () => {
                 return !(isVivoAndre || isVivoMarcelly);
             });
 
-            // 5. Adjust "REMÉDIOS DO ANDRÉ" to 170.00 and mark as paid (bought last Wednesday, May 27, 2026) ONLY in June 2026. Keep unpaid in future months.
-            data.expenses = data.expenses.map(e => {
+            // 5. Adjust "REMÉDIOS DO ANDRÉ" to 170.00 and mark as paid ONLY in June 2026. Filter generic out for September onwards.
+            data.expenses = data.expenses.filter(e => {
                 const desc = e.description.toUpperCase();
-                if (desc.includes("REMÉDIOS DO ANDRÉ") || desc.includes("REMEDIOS DO ANDRE")) {
+                if ((month >= 9 || year > 2026) && (desc === "REMÉDIOS DO ANDRÉ" || desc === "REMEDIOS DO ANDRE")) {
+                    return false;
+                }
+                return true;
+            }).map(e => {
+                const desc = e.description.toUpperCase();
+                if (desc === "REMÉDIOS DO ANDRÉ" || desc === "REMEDIOS DO ANDRE") {
                     if (month === 6) {
                         return { ...e, amount: 170.00, paid: true, paidAt: '2026-05-27' };
-                    } else if (month >= 7) {
-                        return { ...e, amount: 170.00, paid: false, paidAt: null, };
+                    } else if (month >= 7 && month < 9) {
+                        return { ...e, amount: 170.00, paid: false, paidAt: null };
                     }
                 }
                 return e;
@@ -1045,6 +1102,7 @@ const App: React.FC = () => {
                 addOrUpdateIagoExpense("PASSAGENS PARA SALVADOR", targetPassagensAmount, "passagens_salvador", { current: iagoNewInst, total: 6 });
                 addOrUpdateIagoExpense("PRIMEIRO CARRO ALUGADO", 63.17, "primeiro_carro", { current: iagoNewInst, total: 6 });
                 addOrUpdateIagoExpense("SEGUNDO CARRO ALUGADO", 78.57, "segundo_carro", { current: iagoNewInst, total: 6 });
+                addOrUpdateIagoExpense("AIRBNB (HMT3Q9TBYB)", 190.74, "airbnb_hmt3q9tbyb", { current: iagoNewInst, total: 6 });
             }
             
             // Cleanup old variables and requested removals
@@ -1104,6 +1162,208 @@ const App: React.FC = () => {
             data.avulsosItems = data.avulsosItems.map(a => {
                 if (a.userModifiedPaid) return a;
                 return { ...a, paid: false, paidAt: null, };
+            });
+        }
+
+        // Explicit updates for September 2026 as requested by user
+        if (year === 2026 && month === 9) {
+            data.expenses = data.expenses.map(e => {
+                const desc = e.description.toUpperCase();
+                if (desc === 'ALUGUEL') {
+                    return {
+                        ...e,
+                        paid: true,
+                        userModifiedPaid: true,
+                        paidAt: e.paidAt || '2026-09-01T12:00:00Z'
+                    };
+                }
+                if (desc.includes('INTERNET DA CASA') || desc === 'INTERNET') {
+                    return {
+                        ...e,
+                        amount: 125.89,
+                        paid: true,
+                        userModifiedPaid: true,
+                        paidAt: e.paidAt || '2026-09-01T12:00:00Z'
+                    };
+                }
+                if (desc.includes('PSICÓLOGA') || desc.includes('PSICOLOGA')) {
+                    return {
+                        ...e,
+                        amount: 350.00,
+                        paid: true,
+                        userModifiedPaid: true,
+                        paidAt: e.paidAt || '2026-09-01T12:00:00Z'
+                    };
+                }
+                if (desc.includes('APPAI DA MARCELLY')) {
+                    return {
+                        ...e,
+                        amount: 110.00,
+                        group: 'MARCIA BISPO'
+                    };
+                }
+                if (desc.includes('CELULAR DA MARCELLY')) {
+                    return {
+                        ...e,
+                        amount: 385.74,
+                        installments: { current: 3, total: 12 },
+                        group: 'MARCIA BISPO'
+                    };
+                }
+                if (desc.includes('CARTÃO DO ITAÚ DO ANDRÉ') || desc.includes('CARTAO DO ITAU DO ANDRE')) {
+                    return {
+                        ...e,
+                        amount: 237.96
+                    };
+                }
+                if (desc.includes('CARTÃO DO ITAÚ DA MARCELLY') || desc.includes('CARTAO DO ITAU DA MARCELLY')) {
+                    return {
+                        ...e,
+                        amount: 198.34
+                    };
+                }
+                return e;
+            });
+
+            // Ensure paid July loan of 500 for Marcia Bispo in September
+            const hasJulyLoan = data.expenses.some(e => e.description.toUpperCase().includes('EMPRÉSTIMO COM MARCIA BISPO (JULHO)') || e.description.toUpperCase().includes('EMPRÉSTIMO DE JULHO'));
+            if (!hasJulyLoan) {
+                data.expenses.push({
+                    id: 'loan_mb_july_sep26',
+                    description: 'EMPRÉSTIMO DE JULHO (MARCIA BISPO)',
+                    amount: 500.00,
+                    category: 'Dívidas',
+                    paid: true,
+                    userModifiedPaid: true,
+                    dueDate: '2026-09-01',
+                    paidAt: '2026-09-01T12:00:00Z',
+                    group: 'MARCIA BISPO'
+                });
+            }
+
+            // Marcia Brito installment counts and items for September 2026
+            const mbOverrides: Array<{ match: (d: string) => boolean; desc: string; current: number; total: number; amount: number; cat: string }> = [
+                { match: d => d.includes('APPAI DO ANDRÉ') || d.includes('APPAI DO ANDRE') || (d.includes('APPAI') && d.includes('ANDRÉ')), desc: 'APPAI DO ANDRÉ', current: 9, total: 12, amount: 129.50, cat: 'Saúde' },
+                { match: d => d.includes('INTERMÉDICA DO ANDRÉ') || d.includes('INTERMEDICA DO ANDRE') || (d.includes('INTERMÉDICA') && d.includes('ANDRÉ')), desc: 'INTERMÉDICA DO ANDRÉ', current: 9, total: 12, amount: 123.00, cat: 'Saúde' },
+                { match: d => d.includes('DENTISTA'), desc: 'DENTISTA', current: 1, total: 3, amount: 250.00, cat: 'Saúde' },
+                { match: d => d.includes('EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO') || d.includes('EMPRESTIMO PARA PAGAR AS CONTAS DE JUNHO'), desc: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO', current: 3, total: 4, amount: 486.00, cat: 'Dívidas' },
+                { match: d => d.includes('FACULDADE DA MARCELLY') || d.includes('FACULDADE'), desc: 'FACULDADE DA MARCELLY', current: 9, total: 10, amount: 202.68, cat: 'Educação' },
+                { match: d => d.includes('KR AUTOPEÇAS') || d.includes('KR AUTOPECAS'), desc: 'KR AUTOPEÇAS', current: 4, total: 7, amount: 41.57, cat: 'Transporte' },
+                { match: d => d.includes('RENEGOCIAR CARREFOUR') || d.includes('CARREFOUR'), desc: 'RENEGOCIAR CARREFOUR', current: 9, total: 16, amount: 312.50, cat: 'Dívidas' },
+                { match: d => d.includes('REFORMA DO SOFÁ') || d.includes('REFORMA DO SOFA') || d.includes('SOFÁ DE CAXIAS') || d.includes('SOFA DE CAXIAS'), desc: 'REFORMA DO SOFÁ DE CAXIAS', current: 5, total: 5, amount: 115.00, cat: 'Moradia' },
+                { match: d => d.includes('ALINHAMENTO DO CARRO') || d.includes('ALINHAMENTO'), desc: 'ALINHAMENTO DO CARRO', current: 1, total: 2, amount: 165.00, cat: 'Transporte' }
+            ];
+
+            mbOverrides.forEach(item => {
+                const index = data.expenses.findIndex(e => item.match(e.description.toUpperCase()));
+                if (index >= 0) {
+                    data.expenses[index] = {
+                        ...data.expenses[index],
+                        description: item.desc,
+                        amount: item.amount,
+                        category: item.cat,
+                        installments: { current: item.current, total: item.total },
+                        group: 'MARCIA BRITO'
+                    };
+                } else {
+                    data.expenses.push({
+                        id: `fin_${item.desc.replace(/[^A-Z0-9]/gi, '')}_sep26`,
+                        description: item.desc,
+                        amount: item.amount,
+                        category: item.cat,
+                        paid: false,
+                        dueDate: '2026-09-12',
+                        installments: { current: item.current, total: item.total },
+                        group: 'MARCIA BRITO'
+                    });
+                }
+            });
+
+            // Lili Torres items for September 2026
+            const liliOverrides: Array<{ match: (d: string) => boolean; desc: string; current: number; total: number; amount: number; cat: string }> = [
+                { match: d => d.includes('EMPRÉSTIMO COM LILI') || d.includes('EMPRESTIMO COM LILI'), desc: 'EMPRÉSTIMO COM LILI', current: 3, total: 5, amount: 800.00, cat: 'Dívidas' },
+                { match: d => d.includes('SHEIN'), desc: 'COMPRA NA SHEIN (LILI)', current: 2, total: 3, amount: 94.07, cat: 'Outros' },
+                { match: d => d.includes('BRISA'), desc: 'COMPRA NA BRISA (LILI)', current: 2, total: 3, amount: 86.67, cat: 'Outros' },
+                { match: d => d.includes('DALUZ'), desc: 'COMPRA NA DALUZ (LILI)', current: 2, total: 3, amount: 56.00, cat: 'Outros' },
+                { match: d => d.includes('NORDESTE') || (d.includes('VIAGEM') && d.includes('LILI')), desc: 'EMPRÉSTIMO VIAGEM NORDESTE (LILI)', current: 2, total: 6, amount: 335.90, cat: 'Dívidas' },
+                { match: d => d.includes('PRESENTE DO ANDRÉ') || d.includes('PRESENTE DO ANDRE') || (d.includes('PRESENTE') && d.includes('LILI')), desc: 'PRESENTE DO ANDRÉ (LILI)', current: 1, total: 3, amount: 119.97, cat: 'Outros' }
+            ];
+
+            liliOverrides.forEach(item => {
+                const index = data.expenses.findIndex(e => item.match(e.description.toUpperCase()) && (e.group === 'LILI TORRES' || !e.group));
+                if (index >= 0) {
+                    data.expenses[index] = {
+                        ...data.expenses[index],
+                        description: item.desc,
+                        amount: item.amount,
+                        category: item.cat,
+                        installments: { current: item.current, total: item.total },
+                        group: 'LILI TORRES'
+                    };
+                } else {
+                    data.expenses.push({
+                        id: `fin_${item.desc.replace(/[^A-Z0-9]/gi, '')}_sep26`,
+                        description: item.desc,
+                        amount: item.amount,
+                        category: item.cat,
+                        paid: false,
+                        dueDate: '2026-09-04',
+                        installments: { current: item.current, total: item.total },
+                        group: 'LILI TORRES'
+                    });
+                }
+            });
+
+            // André separated medicine expenses for September 2026
+            const remediosAndresList = [
+                { desc: 'REMÉDIO DO ANDRÉ (TEA/TDAH)', amount: 250.00, due: '2026-09-10' },
+                { desc: 'CANETA POVIZTRA (CONTROLE METABÓLICO)', amount: 490.00, due: '2026-09-10' },
+                { desc: 'VITAMINA D INJETÁVEL (CONTROLE METABÓLICO)', amount: 152.00, due: '2026-09-10' },
+                { desc: 'VITAMINA B (CONTROLE METABÓLICO)', amount: 46.00, due: '2026-09-10' }
+            ];
+            remediosAndresList.forEach(item => {
+                const index = data.expenses.findIndex(e => e.description.toUpperCase() === item.desc);
+                if (index >= 0) {
+                    data.expenses[index] = {
+                        ...data.expenses[index],
+                        amount: item.amount,
+                        category: 'Saúde',
+                        group: 'MORADIA'
+                    };
+                } else {
+                    data.expenses.push({
+                        id: `remed_andre_${item.desc.replace(/[^A-Z0-9]/gi, '')}_sep26`,
+                        description: item.desc,
+                        amount: item.amount,
+                        category: 'Saúde',
+                        paid: false,
+                        dueDate: item.due,
+                        group: 'MORADIA'
+                    });
+                }
+            });
+
+            // Rebecca Brito items for September 2026 (Parcela 22 e Parcela 23)
+            data.expenses = data.expenses.filter(e => !e.description.toUpperCase().includes('CIDADANIA'));
+            data.expenses.push({
+                id: 'fin_cidadania_22_sep26',
+                description: 'CIDADANIA PORTUGUESA',
+                amount: 140.00,
+                category: 'Dívidas',
+                paid: false,
+                dueDate: '2026-09-12',
+                installments: { current: 22, total: 37 },
+                group: 'REBECCA BRITO'
+            });
+            data.expenses.push({
+                id: 'fin_cidadania_23_sep26',
+                description: 'CIDADANIA PORTUGUESA',
+                amount: 140.00,
+                category: 'Dívidas',
+                paid: false,
+                dueDate: '2026-09-12',
+                installments: { current: 23, total: 37 },
+                group: 'REBECCA BRITO'
             });
         }
 
@@ -1493,14 +1753,16 @@ const App: React.FC = () => {
     }, [monthData]);
 
     const getDebtColor = (name: string) => {
-        if (name.includes('LILI')) return 'from-teal-400 to-emerald-500';
-        if (name.includes('MARCIA')) return 'from-emerald-500 to-teal-600';
-        if (name.includes('JADY')) return 'from-green-400 to-emerald-500';
-        if (name.includes('CLAUDIO')) return 'from-emerald-600 to-teal-700';
-        if (name.includes('REBECCA')) return 'from-teal-500 to-emerald-600';
-        if (name.includes('IAGO')) return 'from-emerald-400 to-teal-500';
-        if (name.includes('DÍVIDAS NA RUA') || name.includes('DIVIDAS NA RUA')) return 'from-rose-400 to-orange-500';
-        return 'from-emerald-700 to-teal-800';
+        if (name.includes('MORADIA')) return 'from-red-600 to-red-700';
+        if (name.includes('MARCIA BRITO')) return 'from-orange-500 to-orange-600';
+        if (name.includes('MARCIA BISPO')) return 'from-amber-500 to-amber-600';
+        if (name.includes('LILI')) return 'from-yellow-400 to-yellow-500';
+        if (name.includes('REBECCA')) return 'from-emerald-500 to-emerald-600';
+        if (name.includes('IAGO')) return 'from-emerald-800 to-emerald-950';
+        if (name.includes('JADY')) return 'from-blue-800 to-indigo-950';
+        if (name.includes('DÍVIDAS NA RUA') || name.includes('DIVIDAS NA RUA')) return 'from-sky-400 to-sky-600';
+        if (name.includes('CLAUDIO')) return 'from-purple-600 to-purple-800';
+        return 'from-slate-700 to-slate-900';
     };
 
     const sidebarAccounts = monthData?.bankAccounts || [];
@@ -2138,9 +2400,9 @@ const App: React.FC = () => {
                                                 }}
                                                 className={`flex-1 py-3 px-2 rounded-xl text-xs font-black uppercase tracking-wide transition-all border ${getTabStyle(type)}`}
                                             >
-                                                {type === 'incomes' ? 'Entradas' : 
-                                                 type === 'expenses' ? 'Despesas' :
-                                                 'Avulsos'}
+                                                {type === 'incomes' ? `Entradas (${formatCurrency(stats.combined.total)})` : 
+                                                 type === 'expenses' ? `Despesas (${formatCurrency(stats.realExpenses.total)})` :
+                                                 `Avulsos (${formatCurrency(monthData?.avulsosItems?.reduce((acc, i) => acc + (i.amount || 0), 0) || 0)})`}
                                             </button>
                                         ))}
                                     </div>

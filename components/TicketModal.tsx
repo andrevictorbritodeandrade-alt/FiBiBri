@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { Transaction } from '../types';
 import { formatCurrency } from '../utils/financeUtils';
-import { Download, Share2, X, Check, Ticket, User, Calendar, ShieldCheck } from 'lucide-react';
+import { Download, Share2, X, Check, User, Calendar, CheckCircle2, ShieldCheck, QrCode } from 'lucide-react';
 
 interface TicketModalProps {
     isOpen: boolean;
@@ -35,8 +35,12 @@ export const TicketModal: React.FC<TicketModalProps> = ({
 
     const totalSum = selectedTransactions.reduce((acc, t) => acc + (t.amount || 0), 0);
     const monthName = MONTH_NAMES[currentMonth - 1] || 'Mês Atual';
-    const issueDate = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const ticketId = `TCK-${Math.floor(100000 + Math.random() * 900000)}`;
+    const now = new Date();
+    const issueDate = now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const issueTime = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const authCode = `E${currentYear}${String(currentMonth).padStart(2, '0')}${Math.random().toString(36).substring(2, 8).toUpperCase()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+    const displayRecipient = recipientName.trim() || categoryOrGroupTitle || selectedTransactions[0]?.group || selectedTransactions[0]?.category || 'Destinatário';
 
     const showToast = (msg: string) => {
         setToastMessage(msg);
@@ -45,30 +49,51 @@ export const TicketModal: React.FC<TicketModalProps> = ({
 
     const getFileName = () => {
         const cleanName = (text: string) => text.replace(/[/\\?%*:|"<>]/g, '').trim();
-        const categoryName = categoryOrGroupTitle || selectedTransactions[0]?.category || 'Geral';
-        const formattedRecipient = recipientName ? ` - ${cleanName(recipientName)}` : '';
-        return `resumo de contas - ${cleanName(categoryName)}${formattedRecipient} - ${monthName} ${currentYear}.png`;
+        const formattedRecipient = cleanName(displayRecipient);
+        return `comprovante-pix-${formattedRecipient}-${monthName}-${currentYear}.png`;
+    };
+
+    const generateImage = async (): Promise<string> => {
+        if (!ticketRef.current) throw new Error('Element not found');
+        const node = ticketRef.current;
+        
+        // Explicitly calculate natural full dimensions
+        const width = node.offsetWidth || 380;
+        const height = node.scrollHeight;
+
+        return await toPng(node, {
+            quality: 1,
+            pixelRatio: 2.5,
+            backgroundColor: '#ffffff',
+            cacheBust: true,
+            width: width,
+            height: height,
+            canvasWidth: width * 2.5,
+            canvasHeight: height * 2.5,
+            style: {
+                transform: 'none',
+                maxHeight: 'none',
+                height: `${height}px`,
+                width: `${width}px`,
+                overflow: 'visible'
+            }
+        });
     };
 
     const handleDownloadImage = async () => {
         if (!ticketRef.current) return;
         try {
             setIsGenerating(true);
-            // Slight delay to ensure rendering is complete
-            await new Promise(resolve => setTimeout(resolve, 150));
-            const dataUrl = await toPng(ticketRef.current, {
-                quality: 0.98,
-                pixelRatio: 2,
-                backgroundColor: '#0f172a'
-            });
+            await new Promise(resolve => setTimeout(resolve, 200));
+            const dataUrl = await generateImage();
             
             const link = document.createElement('a');
             link.download = getFileName();
             link.href = dataUrl;
             link.click();
-            showToast('✓ Imagem salva no seu dispositivo!');
+            showToast('✓ Comprovante completo salvo com sucesso!');
         } catch (err) {
-            console.error('Erro ao gerar imagem:', err);
+            console.error('Erro ao gerar comprovante:', err);
             showToast('Erro ao gerar imagem. Tente novamente.');
         } finally {
             setIsGenerating(false);
@@ -79,42 +104,40 @@ export const TicketModal: React.FC<TicketModalProps> = ({
         if (!ticketRef.current) return;
         try {
             setIsGenerating(true);
-            await new Promise(resolve => setTimeout(resolve, 150));
-            const dataUrl = await toPng(ticketRef.current, {
-                quality: 0.98,
-                pixelRatio: 2,
-                backgroundColor: '#0f172a'
-            });
+            await new Promise(resolve => setTimeout(resolve, 200));
+            const dataUrl = await generateImage();
 
-            // Convert dataUrl to blob
             const response = await fetch(dataUrl);
             const blob = await response.blob();
             const fileName = getFileName();
             const file = new File([blob], fileName, { type: 'image/png' });
 
+            const summaryText = `*COMPROVANTE DE PAGAMENTO / CONTAS*\n` +
+                `*Destinatário:* ${displayRecipient}\n` +
+                `*Referência:* ${monthName}/${currentYear}\n\n` +
+                selectedTransactions.map(t => {
+                    const inst = t.installments ? ` (Parc. ${t.installments.current}/${t.installments.total})` : '';
+                    return `• ${t.description}${inst}: ${formatCurrency(t.amount)}`;
+                }).join('\n') +
+                `\n\n*VALOR TOTAL:* ${formatCurrency(totalSum)}`;
+
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
-                    title: `Resumo de Contas - ${categoryOrGroupTitle || 'Geral'}`,
-                    text: `Segue o resumo de contas${recipientName ? ` para ${recipientName}` : ''} - Total: ${formatCurrency(totalSum)}`,
+                    title: `Comprovante - ${displayRecipient}`,
+                    text: summaryText,
                     files: [file]
                 });
-                showToast('✓ Compartilhado com sucesso!');
+                showToast('✓ Comprovante compartilhado!');
             } else if (navigator.share) {
                 await navigator.share({
-                    title: `Resumo de Contas - ${categoryOrGroupTitle || 'Geral'}`,
-                    text: `*RESUMO DE CONTAS (${monthName}/${currentYear})* ${recipientName ? `\nPara: ${recipientName}` : ''}\n\n` +
-                        selectedTransactions.map(t => `• ${t.description}: ${formatCurrency(t.amount)}`).join('\n') +
-                        `\n\n*TOTAL: ${formatCurrency(totalSum)}*`
+                    title: `Comprovante - ${displayRecipient}`,
+                    text: summaryText
                 });
                 handleDownloadImage();
             } else {
-                // Fallback: Copy summary text to clipboard & download image
-                const text = `*RESUMO DE CONTAS (${monthName}/${currentYear})* ${recipientName ? `\nPara: ${recipientName}` : ''}\n\n` +
-                    selectedTransactions.map(t => `• ${t.description}: ${formatCurrency(t.amount)}`).join('\n') +
-                    `\n\n*TOTAL: ${formatCurrency(totalSum)}*`;
-                await navigator.clipboard.writeText(text);
+                await navigator.clipboard.writeText(summaryText);
                 handleDownloadImage();
-                showToast('✓ Texto copiado e imagem baixada para envio!');
+                showToast('✓ Texto copiado e imagem salva!');
             }
         } catch (err) {
             console.error('Erro ao compartilhar:', err);
@@ -126,24 +149,21 @@ export const TicketModal: React.FC<TicketModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn overflow-y-auto">
-            <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
+            <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[94vh]">
                 
-                {/* Header Bar */}
-                <div className="bg-slate-900 px-5 py-4 border-b border-slate-800 flex justify-between items-center shrink-0">
+                {/* Header Modal Bar */}
+                <div className="bg-slate-900 px-5 py-3.5 border-b border-slate-800 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center font-black shadow-lg shadow-orange-500/30">
-                            <Ticket size={20} />
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black shadow-md shadow-emerald-500/20">
+                            <CheckCircle2 size={18} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <h3 className="text-base font-black text-white tracking-tight flex items-center gap-2">
-                                Bilhete de Contas
-                                <span className="bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[10px] uppercase font-black px-2 py-0.5 rounded-full">
-                                    Estilo Betano
+                            <h3 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-2">
+                                Comprovante PIX
+                                <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] uppercase font-black px-2 py-0.5 rounded-full">
+                                    Padrão Bancário
                                 </span>
                             </h3>
-                            <p className="text-xs font-semibold text-slate-400">
-                                {selectedTransactions.length} item{selectedTransactions.length > 1 ? 's' : ''} selecionado{selectedTransactions.length > 1 ? 's' : ''}
-                            </p>
                         </div>
                     </div>
                     <button 
@@ -155,127 +175,145 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                 </div>
 
                 {/* Optional Recipient Name Input */}
-                <div className="px-5 pt-3 pb-2 bg-slate-900/90 border-b border-slate-800/80 shrink-0">
-                    <div className="flex items-center gap-2 bg-slate-800/80 rounded-xl px-3 py-2 border border-slate-700/60 focus-within:border-orange-500/60 transition-all">
-                        <User size={16} className="text-slate-400" />
+                <div className="px-5 py-2.5 bg-slate-900/90 border-b border-slate-800 shrink-0">
+                    <div className="flex items-center gap-2 bg-slate-800/80 rounded-xl px-3 py-1.5 border border-slate-700/60 focus-within:border-emerald-500/60 transition-all">
+                        <User size={15} className="text-slate-400" />
                         <input 
                             type="text"
-                            placeholder="Nome do Destinatário (Ex: Iago, André, Marcelly...)"
+                            placeholder="Nome do Destinatário (Ex: Rebecca Brito, Marcia...)"
                             value={recipientName}
                             onChange={(e) => setRecipientName(e.target.value)}
-                            className="bg-transparent text-xs sm:text-sm font-bold text-white placeholder-slate-500 w-full outline-none"
+                            className="bg-transparent text-xs sm:text-sm font-semibold text-white placeholder-slate-500 w-full outline-none"
                         />
                     </div>
                 </div>
 
-                {/* Printable Betano-Style Ticket View */}
-                <div className="p-4 sm:p-5 overflow-y-auto flex-1 bg-slate-950">
+                {/* Printable Bank Receipt View (CLARO / PADRÃO PIX BANCÁRIO) */}
+                <div className="p-3 sm:p-4 overflow-y-auto flex-1 bg-slate-950 flex justify-center">
                     <div 
                         ref={ticketRef} 
-                        className="bg-slate-900 border-2 border-orange-500/40 rounded-2xl overflow-hidden shadow-2xl text-slate-100 font-sans relative"
+                        className="w-full max-w-[380px] bg-white text-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-200 font-sans select-none"
                     >
-                        {/* Top Accent Orange Bar */}
-                        <div className="h-2.5 bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500" />
+                        {/* Top Bank Green Bar */}
+                        <div className="h-2 bg-emerald-600 w-full" />
 
-                        {/* Ticket Banner Header */}
-                        <div className="p-5 bg-gradient-to-b from-slate-900 to-slate-900/95 border-b border-slate-800 relative">
-                            <div className="flex justify-between items-start gap-3">
-                                <div>
-                                    <div className="inline-flex items-center gap-1.5 bg-orange-500 text-slate-950 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md mb-2">
-                                        <Ticket size={12} strokeWidth={3} />
-                                        <span>Comprovante de Contas</span>
-                                    </div>
-                                    <h4 className="text-xl font-black text-white uppercase tracking-tight">
-                                        {recipientName ? `Contas - ${recipientName}` : (categoryOrGroupTitle || 'Resumo Financeiro')}
-                                    </h4>
-                                    <div className="flex items-center gap-2 mt-1 text-slate-400 text-xs font-semibold">
-                                        <Calendar size={13} className="text-orange-400" />
-                                        <span>{monthName.toUpperCase()} / {currentYear}</span>
-                                    </div>
-                                </div>
-                                
-                                <div className="text-right shrink-0">
-                                    <span className="text-[10px] font-mono font-bold text-slate-500 block">ID: {ticketId}</span>
-                                    <span className="text-[10px] font-semibold text-slate-400 block">{issueDate}</span>
-                                </div>
+                        {/* Bank PIX Header */}
+                        <div className="px-6 pt-5 pb-4 text-center border-b border-slate-100">
+                            <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-emerald-50 border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shadow-sm">
+                                <CheckCircle2 size={26} strokeWidth={2.5} />
+                            </div>
+                            <h2 className="text-xs font-black uppercase tracking-widest text-emerald-700">
+                                Comprovante de Pagamento
+                            </h2>
+                            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                                {issueDate} às {issueTime}
+                            </p>
+
+                            {/* Total Amount Big Display */}
+                            <div className="mt-4 pt-3 pb-2 bg-slate-50 rounded-xl border border-slate-200/80">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                                    Valor Total da Conta
+                                </span>
+                                <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-mono">
+                                    {formatCurrency(totalSum)}
+                                </span>
                             </div>
                         </div>
 
-                        {/* Items List */}
-                        <div className="p-4 sm:p-5 bg-slate-900 space-y-2.5">
-                            <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-wider pb-1.5 border-b border-slate-800">
-                                <span>Descrição da Conta</span>
-                                <span className="text-right">Valor</span>
+                        {/* Account & Details Section */}
+                        <div className="px-6 py-4 space-y-3 text-xs">
+                            {/* Destinatário */}
+                            <div className="flex justify-between items-start pb-2 border-b border-slate-100">
+                                <span className="text-slate-500 font-medium">Destinatário</span>
+                                <span className="text-right font-black text-slate-900 uppercase tracking-tight max-w-[200px] truncate">
+                                    {displayRecipient}
+                                </span>
                             </div>
 
-                            {selectedTransactions.map((item, idx) => (
-                                <div 
-                                    key={item.id || idx}
-                                    className="flex justify-between items-center py-2 px-3 bg-slate-800/60 rounded-xl border border-slate-800 hover:border-slate-700 transition-all gap-3"
-                                >
-                                    <div className="flex flex-col min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
-                                            <span className="text-xs sm:text-sm font-bold text-slate-100 truncate">
-                                                {item.description}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-0.5 pl-3.5">
-                                            {item.category && (
-                                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                                                    {item.category}
-                                                </span>
-                                            )}
-                                            {item.installments && (
-                                                <span className="text-[9px] font-extrabold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                                                    Parc. {item.installments.current}/{item.installments.total}
-                                                </span>
-                                            )}
-                                            {(item.dueDate || item.day) && (
-                                                <span className="text-[9px] font-bold text-orange-400/90 bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20">
-                                                    Venc.: Dia {item.dueDate ? item.dueDate.split('-')[2] : String(item.day).padStart(2, '0')}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
+                            {/* Mês de Referência */}
+                            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                <span className="text-slate-500 font-medium">Mês de Referência</span>
+                                <span className="font-bold text-slate-800">
+                                    {monthName} de {currentYear}
+                                </span>
+                            </div>
 
-                                    <div className="text-right shrink-0">
-                                        <span className="text-xs sm:text-sm font-black text-white font-mono">
-                                            {formatCurrency(item.amount)}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Total Summary Footer Box (Betano Style) */}
-                        <div className="p-4 sm:p-5 bg-slate-950 border-t-2 border-dashed border-slate-800 relative">
-                            <div className="bg-gradient-to-r from-orange-600 to-amber-600 rounded-2xl p-4 text-white shadow-xl flex justify-between items-center">
-                                <div>
-                                    <span className="text-[10px] font-black text-orange-100 uppercase tracking-widest block">
-                                        TOTAL A PAGAR / TRANSMITIR
+                            {/* Detalhamento das Contas / Parcelas */}
+                            <div className="pt-1">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                        Contas e Parcelas ({selectedTransactions.length})
                                     </span>
-                                    <span className="text-xs font-semibold text-orange-100/90">
-                                        {selectedTransactions.length} item{selectedTransactions.length > 1 ? 's' : ''} somados
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                        Valor
                                     </span>
                                 </div>
-                                <div className="text-right">
-                                    <span className="text-xl sm:text-2xl font-black font-mono tracking-tight drop-shadow-md">
+
+                                <div className="space-y-2">
+                                    {selectedTransactions.map((item, idx) => (
+                                        <div 
+                                            key={item.id || idx}
+                                            className="p-2.5 rounded-lg bg-slate-50/80 border border-slate-200/70 flex justify-between items-center gap-2"
+                                        >
+                                            <div className="min-w-0 flex-1">
+                                                <div className="font-bold text-slate-900 text-xs truncate">
+                                                    {item.description}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    {item.installments ? (
+                                                        <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-black">
+                                                            Parcela {item.installments.current} de {item.installments.total}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-block px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-semibold">
+                                                            Parcela Única
+                                                        </span>
+                                                    )}
+                                                    {(item.dueDate || item.day) && (
+                                                        <span className="text-[10px] text-slate-500 font-medium">
+                                                            • Venc.: {item.dueDate ? item.dueDate.split('-')[2] : String(item.day).padStart(2, '0')}/{String(currentMonth).padStart(2, '0')}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="text-right shrink-0">
+                                                <span className="font-black text-slate-900 font-mono text-xs sm:text-sm">
+                                                    {formatCurrency(item.amount)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Resumo Final */}
+                            <div className="pt-2 border-t-2 border-dashed border-slate-200">
+                                <div className="flex justify-between items-center py-1">
+                                    <span className="font-black text-slate-900 text-xs uppercase tracking-tight">
+                                        Total a Pagar
+                                    </span>
+                                    <span className="font-black text-emerald-700 font-mono text-base">
                                         {formatCurrency(totalSum)}
                                     </span>
                                 </div>
                             </div>
-
-                            {/* Watermark Stamp */}
-                            <div className="mt-4 pt-3 flex justify-between items-center text-[10px] font-bold text-slate-500 border-t border-slate-900">
-                                <div className="flex items-center gap-1.5 text-emerald-400">
-                                    <ShieldCheck size={14} />
-                                    <span className="font-extrabold uppercase tracking-wider text-[9px]">Verificado Finanças AI</span>
-                                </div>
-                                <span className="font-mono text-slate-600">ST-BETANO-CONFIRMED</span>
-                            </div>
                         </div>
 
+                        {/* PIX Security & Authentication Footer */}
+                        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 text-[10px] text-slate-500 space-y-1">
+                            <div className="flex justify-between items-center font-mono text-[9px] text-slate-400">
+                                <span>Autenticação:</span>
+                                <span className="font-bold text-slate-600 truncate max-w-[200px]">{authCode}</span>
+                            </div>
+                            <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
+                                <div className="flex items-center gap-1 text-emerald-600 font-bold">
+                                    <ShieldCheck size={13} />
+                                    <span>Comprovante Oficial Finanças</span>
+                                </div>
+                                <span className="font-semibold text-slate-400">Padrão PIX</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -284,10 +322,10 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                     <button
                         onClick={handleDownloadImage}
                         disabled={isGenerating}
-                        className="flex-1 py-3 px-4 bg-orange-500 hover:bg-orange-600 active:scale-98 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                        className="flex-1 py-3 px-4 bg-emerald-500 hover:bg-emerald-600 active:scale-98 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                     >
                         <Download size={18} strokeWidth={2.5} />
-                        <span>{isGenerating ? 'Gerando Imagem...' : 'Salvar Imagem (PNG)'}</span>
+                        <span>{isGenerating ? 'Gerando Imagem...' : 'Salvar Comprovante (PNG)'}</span>
                     </button>
 
                     <button
@@ -296,7 +334,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                         className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 active:scale-98 text-white font-black text-xs sm:text-sm rounded-xl border border-slate-700 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                     >
                         <Share2 size={18} strokeWidth={2.5} />
-                        <span>Enviar / Compartilhar</span>
+                        <span>Compartilhar / Enviar</span>
                     </button>
                 </div>
 
@@ -312,3 +350,4 @@ export const TicketModal: React.FC<TicketModalProps> = ({
         </div>
     );
 };
+

@@ -25,11 +25,14 @@ interface Conta {
 const TARGET_FIXED_DEBTS = [
   { key: 'aluguel', nome: 'Aluguel', defaultVal: 1300.00, match: (d: string) => d.includes('ALUGUEL') },
   { key: 'inter_andre', nome: 'Cartão do Inter do André', defaultVal: 386.00, match: (d: string) => d.includes('INTER') && (d.includes('ANDRÉ') || d.includes('ANDRE')) },
-  { key: 'itau_marcelly', nome: 'Cartão do Itaú da Marcelly', defaultVal: 200.00, match: (d: string) => (d.includes('ITAÚ') || d.includes('ITAU')) && d.includes('MARCELLY') },
+  { key: 'itau_marcelly', nome: 'Cartão do Itaú da Marcelly', defaultVal: 198.34, match: (d: string) => (d.includes('ITAÚ') || d.includes('ITAU')) && d.includes('MARCELLY') },
   { key: 'itau_andre', nome: 'Cartão do Itaú do André', defaultVal: 116.00, match: (d: string) => (d.includes('ITAÚ') || d.includes('ITAU')) && (d.includes('ANDRÉ') || d.includes('ANDRE')) && !d.includes('MARCELLY') },
   { key: 'internet', nome: 'Internet da Casa', defaultVal: 125.00, match: (d: string) => d.includes('INTERNET DA CASA') || d.includes('INTERNET') && d.includes('CASA') },
   { key: 'psicologa', nome: 'Psicóloga da Marcelly', defaultVal: 280.00, match: (d: string) => d.includes('PSICÓLOGA') || d.includes('PSICOLOGA') },
-  { key: 'remedios', nome: 'Remédios do André', defaultVal: 400.00, match: (d: string) => d.includes('REMÉDIO') || d.includes('REMEDIO') },
+  { key: 'remedios_tdah', nome: 'Remédio do André (TEA/TDAH)', defaultVal: 250.00, match: (d: string) => d.includes('TEA') || d.includes('TDAH') },
+  { key: 'poviztra', nome: 'Caneta Poviztra (Controle Metabólico)', defaultVal: 490.00, match: (d: string) => d.includes('POVIZTRA') },
+  { key: 'vitamina_d', nome: 'Vitamina D Injetável (Controle Metabólico)', defaultVal: 152.00, match: (d: string) => d.includes('VITAMINA D') },
+  { key: 'vitamina_b', nome: 'Vitamina B (Controle Metabólico)', defaultVal: 46.00, match: (d: string) => d.includes('VITAMINA B') },
   { key: 'seguro', nome: 'Seguro do Carro', defaultVal: 143.00, match: (d: string) => d.includes('SEGURO DO CARRO') || d.includes('SEGURO') && d.includes('CARRO') },
   { key: 'appai_andre', nome: 'APPAI do André', defaultVal: 129.50, match: (d: string) => d.includes('APPAI') && (d.includes('ANDRÉ') || d.includes('ANDRE')) },
   { key: 'appai_marcelly', nome: 'APPAI da Marcelly', defaultVal: 110.00, match: (d: string) => d.includes('APPAI') && d.includes('MARCELLY') },
@@ -80,10 +83,15 @@ const DEBT_ITEMS_CONFIG: ThirdPartyDebt[] = [
   // MARCIA BISPO
   { name: 'Celular da Marcelly', amount: 385.74, totalAmount: 4628.88, installments: 12, startYear: 2026, startMonth: 3, card: 'MARCIA BISPO' },
   { name: 'Empréstimo com Marcia Bispo', amount: 100.00, totalAmount: 400.00, installments: 4, startYear: 2026, startMonth: 4, card: 'MARCIA BISPO', isPausedInJune: true },
+  { name: 'Novo Empréstimo (Out/2026)', amount: 250.00, totalAmount: 1000.00, installments: 4, startYear: 2026, startMonth: 10, card: 'MARCIA BISPO' },
 
   // LILI TORRES
-  { name: 'Compras da Marcelly na Shein', amount: 118.00, totalAmount: 236.00, installments: 2, startYear: 2026, startMonth: 6, card: 'LILI TORRES' },
-  { name: 'Empréstimo com Lili', amount: 800.00, totalAmount: 4000.00, installments: 5, startYear: 2026, startMonth: 5, card: 'LILI TORRES' },
+  { name: 'Empréstimo com Lili', amount: 800.00, totalAmount: 4000.00, installments: 5, startYear: 2026, startMonth: 7, card: 'LILI TORRES' },
+  { name: 'Compra na Shein (Lili)', amount: 94.07, totalAmount: 282.21, installments: 3, startYear: 2026, startMonth: 8, card: 'LILI TORRES' },
+  { name: 'Compra na Brisa (Lili)', amount: 86.67, totalAmount: 260.01, installments: 3, startYear: 2026, startMonth: 8, card: 'LILI TORRES' },
+  { name: 'Compra na DaLuz (Lili)', amount: 56.00, totalAmount: 168.00, installments: 3, startYear: 2026, startMonth: 8, card: 'LILI TORRES' },
+  { name: 'Empréstimo Viagem Nordeste (Lili)', amount: 335.90, totalAmount: 2015.40, installments: 6, startYear: 2026, startMonth: 8, card: 'LILI TORRES' },
+  { name: 'Presente do André (Lili)', amount: 119.97, totalAmount: 359.91, installments: 3, startYear: 2026, startMonth: 9, card: 'LILI TORRES' },
   { name: 'Estadia em Cidade do Cabo', amount: 239.40, totalAmount: 1197.00, installments: 5, startYear: 2026, startMonth: 3, card: 'LILI TORRES' },
   { name: 'Estadia em Johanesburgo', amount: 272.79, totalAmount: 1363.93, installments: 5, startYear: 2026, startMonth: 3, card: 'LILI TORRES' },
   { name: 'Passagens Aéreas SP x Joburg', amount: 504.87, totalAmount: 4038.96, installments: 8, startYear: 2026, startMonth: 1, card: 'LILI TORRES' },
@@ -106,7 +114,7 @@ const DEBT_ITEMS_CONFIG: ThirdPartyDebt[] = [
   { name: 'Estadia em Maragogi', amount: 37.61, totalAmount: 225.66, installments: 6, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)' },
   { name: 'Estadia em Aracaju', amount: 52.17, totalAmount: 313.02, installments: 6, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)' },
   { name: 'Primeira Estadia em Salvador', amount: 30.95, totalAmount: 185.70, installments: 6, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)' },
-  { name: 'Segunda Estadia em Salvador', amount: 92.85, totalAmount: 557.10, installments: 6, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)' }
+  { name: 'Airbnb (Hmt3q9tbyb)', amount: 190.74, totalAmount: 1144.44, installments: 6, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)' }
 ];
 
 const TIMELINE_MONTHS = [
