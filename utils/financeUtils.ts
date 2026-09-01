@@ -1,5 +1,6 @@
 import { MonthData, Transaction, Goal, DebtSettlement } from '../types';
 import { PAYMENT_SCHEDULE, INITIAL_ACCOUNTS, MONTH_NAMES } from '../constants';
+import { INITIAL_SEPTEMBER_AVULSO_TRANSACTIONS } from '../data/avulsoData';
 
 // Helper to get local data key
 export const getStorageKey = (year: number, month: number) => `financeData_${year}_${month}`;
@@ -390,6 +391,10 @@ export const generateMonthData = (year: number, month: number): MonthData => {
     
     if (year === 2026 && month >= 6) {
         // Iago expenses replaced by Cartão do Iago in cyclicalConfig
+    }
+
+    if (year === 2026 && month === 9) {
+        newAvulsosItems.push(...INITIAL_SEPTEMBER_AVULSO_TRANSACTIONS);
     }
 
     const defaultSettlements: DebtSettlement[] = [

@@ -57,66 +57,72 @@ const getCategoryColor = (category: string) => {
 
 const getGroupColors = (key: string = '') => {
     if (key.includes('Distribuição')) return { 
-        header: 'bg-purple-700 text-white', 
+        header: 'bg-purple-700 text-slate-950', 
         card: 'bg-purple-50/70 border-purple-200/60',
-        badge: 'bg-white/20 text-white border-white/30',
-        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
     if (key === 'MORADIA') return { 
-        header: 'bg-red-600 text-white', 
+        header: 'bg-red-600 text-slate-950', 
         card: 'bg-red-50/70 border-red-200/60',
-        badge: 'bg-white/20 text-white border-white/30',
-        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
     if (key === 'MARCIA BRITO') return { 
-        header: 'bg-orange-500 text-white', 
+        header: 'bg-orange-500 text-slate-950', 
         card: 'bg-orange-50/70 border-orange-200/60',
-        badge: 'bg-white/20 text-white border-white/30',
-        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
     if (key === 'MARCIA BISPO') return { 
-        header: 'bg-amber-600 text-white', 
+        header: 'bg-amber-600 text-slate-950', 
         card: 'bg-amber-50/70 border-amber-200/60',
-        badge: 'bg-white/20 text-white border-white/30',
-        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
     if (key === 'LILI TORRES') return { 
-        header: 'bg-yellow-400 text-yellow-950', 
+        header: 'bg-yellow-400 text-slate-950', 
         card: 'bg-yellow-50/70 border-yellow-200/60',
-        badge: 'bg-yellow-950/20 text-yellow-950 border-yellow-950/30',
-        btn: 'bg-yellow-950/15 hover:bg-yellow-950/25 text-yellow-950 border-yellow-950/30'
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
     if (key === 'REBECCA BRITO') return { 
-        header: 'bg-emerald-500 text-white', 
+        header: 'bg-emerald-500 text-slate-950', 
         card: 'bg-emerald-50/70 border-emerald-200/60',
-        badge: 'bg-white/20 text-white border-white/30',
-        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
     if (key.includes('IAGO')) return { 
-        header: 'bg-emerald-900 text-white', 
+        header: 'bg-emerald-900 text-slate-950', 
         card: 'bg-emerald-50/70 border-emerald-200/60',
-        badge: 'bg-white/20 text-white border-white/30',
-        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
     if (key === 'JADY') return { 
-        header: 'bg-blue-900 text-white', 
+        header: 'bg-blue-900 text-slate-950', 
         card: 'bg-blue-50/70 border-blue-200/60',
-        badge: 'bg-white/20 text-white border-white/30',
-        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
     if (key === 'DÍVIDAS NA RUA') return { 
-        header: 'bg-sky-500 text-white', 
+        header: 'bg-sky-500 text-slate-950', 
         card: 'bg-sky-50/70 border-sky-200/60',
-        badge: 'bg-white/20 text-white border-white/30',
-        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
+    };
+    if (key === 'AVULSO' || key.includes('AVULSO')) return { 
+        header: 'bg-violet-600 text-slate-950', 
+        card: 'bg-violet-50/70 border-violet-200/60',
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
     
     // Default for dates (like "Hoje", "25 de agosto")
     return { 
-        header: 'bg-slate-800 text-white', 
+        header: 'bg-slate-300 text-slate-950', 
         card: 'bg-slate-50/70 border-slate-100/50',
-        badge: 'bg-white/20 text-white border-white/30',
-        btn: 'bg-white/10 hover:bg-white/20 text-white border-white/30'
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
 };
 
@@ -186,7 +192,8 @@ const TransactionList: React.FC<TransactionListProps> = ({
             'REBECCA BRITO',
             'JADY',
             'IAGO',
-            'DÍVIDAS NA RUA'
+            'DÍVIDAS NA RUA',
+            'AVULSO'
         ];
         const idxA = priority.indexOf(a);
         const idxB = priority.indexOf(b);
@@ -208,7 +215,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
     }
 
     const formatDateHeader = (key: string) => {
-        if (key.includes('Distribuição') || key === 'MORADIA' || key === 'MARCIA BRITO' || key === 'MARCIA BISPO' || key === 'LILI TORRES' || key === 'REBECCA BRITO' || key === 'JADY' || key === 'IAGO' || key === 'DÍVIDAS NA RUA' || key === 'Sem Data') return key;
+        if (key.includes('Distribuição') || key === 'MORADIA' || key === 'MARCIA BRITO' || key === 'MARCIA BISPO' || key === 'LILI TORRES' || key === 'REBECCA BRITO' || key === 'JADY' || key === 'IAGO' || key === 'DÍVIDAS NA RUA' || key === 'AVULSO' || key === 'Sem Data') return key;
         const [year, month, day] = key.split('-');
         if (!year || !month || !day) return key;
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));

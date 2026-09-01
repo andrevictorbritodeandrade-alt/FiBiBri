@@ -13,6 +13,7 @@ import DailyBalanceTracker from './components/DailyBalanceTracker';
 import Header from './components/Header';
 import { MonthData, TransactionType, Transaction, FinancialProjection, DebtSettlement, DailyBalanceLog } from './types';
 import { generateMonthData, getStorageKey } from './utils/financeUtils';
+import { INITIAL_SEPTEMBER_AVULSO_TRANSACTIONS } from './data/avulsoData';
 import { db, auth, isConfigured, onAuthStateChanged, signInAnonymously } from './services/firebaseConfig';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { FAMILY_ID } from './constants';
@@ -148,13 +149,12 @@ const App: React.FC = () => {
         saveData({ ...monthData, dailyBalances: newDailyBalances }, currentYear, currentMonth);
     };
 
-    // Force refresh to pull updated categories and grouping (v33)
+    // Force refresh to pull updated categories and grouping (v33 & v34 for Sep 2026 avulsos)
     useEffect(() => {
-        const forceUpdateV33 = localStorage.getItem('force_update_v33_mark_payments_28_apr');
-        if (!forceUpdateV33) {
-            localStorage.removeItem('financeData_2026_5');
-            try { localStorage.setItem('force_update_v33_mark_payments_28_apr', 'true'); } catch (e) { console.warn("LocalStorage Quota Exceeded:", e); }
-            window.location.reload();
+        const forceUpdateV34 = localStorage.getItem('force_update_v34_sep26_avulsos');
+        if (!forceUpdateV34) {
+            localStorage.removeItem('financeData_2026_9');
+            try { localStorage.setItem('force_update_v34_sep26_avulsos', 'true'); } catch (e) { console.warn("LocalStorage Quota Exceeded:", e); }
         }
     }, []);
 
@@ -296,10 +296,10 @@ const App: React.FC = () => {
                     setupRealtimeListener(currentYear, currentMonth);
                 } else {
                     signInAnonymously(auth).catch((e) => {
-                        if (e.code === 'auth/admin-restricted-operation' || (e.message && e.message.includes('identity-toolkit-api-has-not-been-used'))) {
-                            console.warn("Firebase Auth API not enabled or restricted. Running in Offline Mode.");
+                        if (e.code === 'auth/admin-restricted-operation' || (e.message && e.message.includes('identity-toolkit-api-has-not-been-used')) || e.code === 'auth/network-request-failed') {
+                            console.warn("Firebase Auth API offline or network unavailable. Running with local cache.");
                         } else {
-                            console.error("Auth Error", e);
+                            console.warn("Auth Notice:", e.message || e);
                         }
                         setSyncStatus('offline');
                     });
@@ -1364,6 +1364,13 @@ const App: React.FC = () => {
                 dueDate: '2026-09-12',
                 installments: { current: 23, total: 37 },
                 group: 'REBECCA BRITO'
+            });
+
+            // Ensure September 2026 avulsos are present
+            INITIAL_SEPTEMBER_AVULSO_TRANSACTIONS.forEach(item => {
+                if (!data.avulsosItems.some(a => a.id === item.id || a.description.toLowerCase() === item.description.toLowerCase() && a.amount === item.amount)) {
+                    data.avulsosItems.push({ ...item });
+                }
             });
         }
 
