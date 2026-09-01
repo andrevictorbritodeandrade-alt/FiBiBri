@@ -93,8 +93,8 @@ const getGroupColors = (key: string = '') => {
         btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
     if (key.includes('IAGO')) return { 
-        header: 'bg-emerald-900 text-slate-950', 
-        card: 'bg-emerald-50/70 border-emerald-200/60',
+        header: 'bg-sky-400 text-slate-950', 
+        card: 'bg-sky-50/70 border-sky-200/60',
         badge: 'bg-black/15 text-slate-950 border-black/20',
         btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };

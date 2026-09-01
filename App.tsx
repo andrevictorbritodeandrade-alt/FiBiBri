@@ -149,12 +149,12 @@ const App: React.FC = () => {
         saveData({ ...monthData, dailyBalances: newDailyBalances }, currentYear, currentMonth);
     };
 
-    // Force refresh to pull updated categories and grouping (v33 & v34 for Sep 2026 avulsos)
+    // Force refresh to pull updated categories and grouping (v36 for Itau paid & pen update)
     useEffect(() => {
-        const forceUpdateV34 = localStorage.getItem('force_update_v34_sep26_avulsos');
-        if (!forceUpdateV34) {
+        const forceUpdateV36 = localStorage.getItem('force_update_v36_itau_andre_paid');
+        if (!forceUpdateV36) {
             localStorage.removeItem('financeData_2026_9');
-            try { localStorage.setItem('force_update_v34_sep26_avulsos', 'true'); } catch (e) { console.warn("LocalStorage Quota Exceeded:", e); }
+            try { localStorage.setItem('force_update_v36_itau_andre_paid', 'true'); } catch (e) { console.warn("LocalStorage Quota Exceeded:", e); }
         }
     }, []);
 
@@ -1213,7 +1213,10 @@ const App: React.FC = () => {
                 if (desc.includes('CARTÃO DO ITAÚ DO ANDRÉ') || desc.includes('CARTAO DO ITAU DO ANDRE')) {
                     return {
                         ...e,
-                        amount: 237.96
+                        amount: 237.96,
+                        paid: true,
+                        userModifiedPaid: true,
+                        paidAt: e.paidAt || '2026-09-01T12:00:00Z'
                     };
                 }
                 if (desc.includes('CARTÃO DO ITAÚ DA MARCELLY') || desc.includes('CARTAO DO ITAU DA MARCELLY')) {
