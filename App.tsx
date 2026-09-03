@@ -499,6 +499,10 @@ const App: React.FC = () => {
     const ensureSystemIntegrity = (data: MonthData, year: number, month: number): MonthData => {
         if (!data) return generateMonthData(year, month);
 
+        // Remove the non-existent 232.33 expense everywhere
+        if (data.expenses) data.expenses = data.expenses.filter(e => e.amount !== 232.33);
+        if (data.avulsosItems) data.avulsosItems = data.avulsosItems.filter(a => a.amount !== 232.33);
+
         // If data has already been saved or loaded with updatedAt > 0, preserve 100% of the user's modifications!
         if (data.updatedAt && data.updatedAt > 0) {
             const isNovDec26OrJan27 = (year === 2026 && (month === 11 || month === 12)) || (year === 2027 && month === 1);
@@ -509,12 +513,7 @@ const App: React.FC = () => {
                 skipped: !!i.skipped
             }));
             data.expenses = (data.expenses || []).filter(e => {
-                if (isNovDec26OrJan27) {
-                    const desc = (e.description || '').toUpperCase();
-                    if (desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (e.id && e.id.includes("passagens_salvador"))) {
-                        return false;
-                    }
-                }
+                
                 return true;
             }).map(e => {
                 const desc = (e.description || '').toUpperCase();
@@ -529,12 +528,7 @@ const App: React.FC = () => {
                 };
             });
             data.avulsosItems = (data.avulsosItems || []).filter(a => {
-                if (isNovDec26OrJan27) {
-                    const desc = (a.description || '').toUpperCase();
-                    if (desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (a.id && a.id.includes("passagens_salvador"))) {
-                        return false;
-                    }
-                }
+                
                 return true;
             }).map(a => {
                 const desc = (a.description || '').toUpperCase();
@@ -1330,11 +1324,9 @@ const App: React.FC = () => {
                 addOrUpdateIagoExpense("UBER", 19.00, "uber_iago", null);
             }
             if (iagoNewInst >= 1 && iagoNewInst <= 6) {
-                const isDuplicatedMonth = (year === 2026 && (month === 11 || month === 12)) || (year === 2027 && month === 1);
-                if (!isDuplicatedMonth) {
-                    const targetPassagensAmount = 216.94;
-                    addOrUpdateIagoExpense("PASSAGENS PARA SALVADOR", targetPassagensAmount, "passagens_salvador", { current: iagoNewInst, total: 6 });
-                }
+                
+                const targetPassagensAmount = 216.94;
+                addOrUpdateIagoExpense("PASSAGENS PARA SALVADOR", targetPassagensAmount, "passagens_salvador", { current: iagoNewInst, total: 6 });
                 addOrUpdateIagoExpense("PRIMEIRO CARRO ALUGADO", 63.17, "primeiro_carro", { current: iagoNewInst, total: 6 });
                 addOrUpdateIagoExpense("SEGUNDO CARRO ALUGADO", 78.57, "segundo_carro", { current: iagoNewInst, total: 6 });
                 addOrUpdateIagoExpense("AIRBNB (HMT3Q9TBYB)", 190.74, "airbnb_hmt3q9tbyb", { current: iagoNewInst, total: 6 });
@@ -1344,9 +1336,7 @@ const App: React.FC = () => {
             const isNovDec26OrJan27 = (year === 2026 && (month === 11 || month === 12)) || (year === 2027 && month === 1);
             data.expenses = data.expenses.filter(e => {
                 const d = e.description.toUpperCase();
-                if (isNovDec26OrJan27 && (d.includes("PASSAGENS PARA SALVADOR") || d.includes("PASSAGENS SALVADOR") || (e.id && e.id.includes("passagens_salvador")))) {
-                    return false;
-                }
+                
                 return !(d.includes("ESTADIA EM SALVADOR")) && 
                        !(d.includes("PRIMEIRA ESTADIA EM SALVADOR")) &&
                        !(d.includes("SEGUNDA ESTADIA EM SALVADOR")) &&
