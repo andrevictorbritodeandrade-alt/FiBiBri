@@ -7,6 +7,7 @@ import TransactionList from './components/TransactionList';
 import Statistics from './components/Statistics';
 import Settlements from './components/Settlements';
 import FlightPlan from './components/FlightPlan';
+import SavingsPlanner from './components/SavingsPlanner';
 import EditTransactionModal from './components/EditTransactionModal';
 import FinancialHealthWidget from './components/FinancialHealthWidget';
 import DailyBalanceTracker from './components/DailyBalanceTracker';
@@ -78,7 +79,7 @@ const App: React.FC = () => {
     });
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [monthData, setMonthData] = useState<MonthData | null>(null);
-    const [view, setView] = useState<'home' | 'transactions' | 'statistics' | 'settlements' | 'flightPlan'>('home');
+    const [view, setView] = useState<'home' | 'transactions' | 'statistics' | 'settlements' | 'flightPlan' | 'savings'>('home');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [syncStatus, setSyncStatus] = useState<'offline' | 'syncing' | 'online'>('offline');
     const [transactionListType, setTransactionListType] = useState<TransactionType>('expenses');
@@ -181,14 +182,14 @@ const App: React.FC = () => {
                 sofisa: 0.00
             };
         } else if (currentYear === 2026 && currentMonth >= 9) {
-            // "nao tenho nada em poupança no momento" -> Inter = 0
-            if (monthData.bankReserves && monthData.bankReserves.inter === 0 && monthData.bankReserves.sofisa === 0) {
+            // R$ 100 guardado no Sofisa como parte das receitas
+            if (monthData.bankReserves && monthData.bankReserves.inter === 0 && monthData.bankReserves.sofisa === 100.00) {
                 return; // already initialized
             } else {
                 newReserves = {
                     santander: monthData.bankReserves?.santander || 0.00,
                     inter: 0.00,
-                    sofisa: 0.00
+                    sofisa: monthData.bankReserves?.sofisa && monthData.bankReserves.sofisa > 0 ? monthData.bankReserves.sofisa : 100.00
                 };
             }
         } else if (currentYear === 2026 && currentMonth > 6) {
@@ -2057,14 +2058,21 @@ const App: React.FC = () => {
             <nav className="fixed bottom-0 left-0 right-0 h-16 lg:h-20 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex items-center justify-around px-4 lg:px-8 z-[100] shadow-[0_-8px_30px_rgb(0,0,0,0.04)] max-w-lg mx-auto md:max-w-none">
                 <button 
                     onClick={() => { setView('home'); setActiveTab('overview'); }}
-                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-8 py-2 rounded-2xl transition-all font-black ${view === 'home' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
+                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-6 py-2 rounded-2xl transition-all font-black ${view === 'home' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
                 >
                     <HomeIcon size={20} className="lg:w-5 lg:h-5" />
                     <span className="text-[10px] lg:text-sm uppercase tracking-wider">Visão</span>
                 </button>
                 <button 
+                    onClick={() => { setView('savings'); }}
+                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-6 py-2 rounded-2xl transition-all font-black ${view === 'savings' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
+                >
+                    <PiggyBank size={20} className="lg:w-5 lg:h-5" />
+                    <span className="text-[10px] lg:text-sm uppercase tracking-wider">Poupar</span>
+                </button>
+                <button 
                     onClick={() => { setView('transactions'); }}
-                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-8 py-2 rounded-2xl transition-all font-black ${view === 'transactions' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
+                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-6 py-2 rounded-2xl transition-all font-black ${view === 'transactions' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
                 >
                     <ShoppingBag size={20} className="lg:w-5 lg:h-5" />
                     <span className="text-[10px] lg:text-sm uppercase tracking-wider">Extrato</span>
@@ -2301,9 +2309,9 @@ const App: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
+                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-6 mb-2">
                                                 {/* Card 1: Open Debts */}
-                                                <div className="bg-white rounded-2xl p-4 lg:p-6 border border-slate-50 shadow-sm flex flex-col justify-between">
+                                                <div className="bg-white rounded-2xl p-2.5 lg:p-3.5 border border-slate-50 shadow-sm flex flex-col justify-between">
                                                     <span className="text-[9px] lg:text-xs font-black text-slate-400 uppercase tracking-widest">Contas em Aberto</span>
                                                     <span className="text-xl lg:text-2xl font-black text-rose-600 tracking-tight mt-1">
                                                         {formatCurrency(stats.realExpenses.unpaid)}
@@ -2314,7 +2322,7 @@ const App: React.FC = () => {
                                                 </div>
 
                                                 {/* Card 2: Real income in Santander */}
-                                                <div className="bg-white rounded-2xl p-4 lg:p-6 border border-slate-50 shadow-sm flex flex-col justify-between">
+                                                <div className="bg-white rounded-2xl p-2.5 lg:p-3.5 border border-slate-50 shadow-sm flex flex-col justify-between">
                                                     <span className="text-[9px] lg:text-xs font-black text-slate-400 uppercase tracking-widest">Saldo Real (Santander)</span>
                                                     <span className="text-xl lg:text-2xl font-black text-emerald-600 tracking-tight mt-1">
                                                         {formatCurrency(bankReserves.santander)}
@@ -2325,7 +2333,7 @@ const App: React.FC = () => {
                                                 </div>
 
                                                 {/* Card 3: Mumbuca Credit */}
-                                                <div className="bg-white rounded-2xl p-4 lg:p-6 border border-slate-50 shadow-sm flex flex-col justify-between">
+                                                <div className="bg-white rounded-2xl p-2.5 lg:p-3.5 border border-slate-50 shadow-sm flex flex-col justify-between">
                                                     <span className="text-[9px] lg:text-xs font-black text-slate-400 uppercase tracking-wide tracking-widest">Crédito Mumbuca</span>
                                                     <span className="text-xl lg:text-2xl font-black text-teal-600 tracking-tight mt-1">
                                                         {formatCurrency(598.00)}
@@ -2344,7 +2352,7 @@ const App: React.FC = () => {
                                                     const isDeficit = missingForDebts > 0;
                                                     
                                                     return (
-                                                        <div className={`rounded-2xl p-4 lg:p-6 border shadow-sm flex flex-col justify-between ${
+                                                        <div className={`rounded-2xl p-2.5 lg:p-3.5 border shadow-sm flex flex-col justify-between ${
                                                             isDeficit 
                                                                 ? 'bg-amber-50/70 border-amber-100 text-amber-900' 
                                                                 : 'bg-emerald-50/70 border-emerald-100 text-emerald-950'
@@ -2380,19 +2388,19 @@ const App: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                                            <div className="grid grid-cols-1 gap-3">
                                                 {groupedDebts.map(group => (
-                                                    <button key={group.name} onClick={() => handleFilter('group', group.name)} className="bg-white rounded-2xl lg:rounded-3xl p-4 lg:p-6 border border-slate-50 shadow-sm flex items-center justify-between group hover:shadow-md transition-all w-full text-left">
-                                                        <div className="flex items-center gap-3 lg:gap-4 overflow-hidden">
+                                                    <button key={group.name} onClick={() => handleFilter('group', group.name)} className="bg-white rounded-2xl lg:rounded-3xl p-2.5 lg:p-3.5 border border-slate-50 shadow-sm flex items-center justify-between group hover:shadow-md transition-all w-full text-left">
+                                                        <div className="flex items-center gap-2.5 lg:gap-3 overflow-hidden">
                                                             <div className={`w-10 h-10 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl bg-gradient-to-br ${getDebtColor(group.name)} text-white flex items-center justify-center shrink-0 shadow-lg shadow-slate-200/50`}>
                                                                 <User size={20} strokeWidth={2.5} className="lg:w-6 lg:h-6" />
                                                             </div>
-                                                            <div className="flex flex-col overflow-hidden">
-                                                                <span className="text-[9px] lg:text-xs font-black text-slate-400 uppercase tracking-widest truncate">{group.name}</span>
-                                                                <span className="text-base lg:text-xl font-black text-slate-850 tracking-tight truncate">
+                                                            <div className="flex flex-col flex-1">
+                                                                <span className="text-[9px] lg:text-xs font-black text-slate-400 uppercase tracking-widest">{group.name}</span>
+                                                                <span className="text-base lg:text-xl font-black text-slate-850 tracking-tight">
                                                                     Falta: {formatCurrency(group.total - group.paidAmount)}
                                                                 </span>
-                                                                <div className="flex flex-col gap-1 mt-2 text-[10px] lg:text-xs font-bold w-full">
+                                                                <div className="flex flex-col gap-1 mt-1 text-[10px] lg:text-xs font-bold w-full">
                                                                     <div className="flex items-center justify-between text-emerald-600 bg-emerald-50/70 px-2 py-0.5 rounded-md">
                                                                         <span>Pago:</span>
                                                                         <span className="font-extrabold">{formatCurrency(group.paidAmount)}</span>
@@ -2434,7 +2442,7 @@ const App: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                                        <div className="grid grid-cols-1 gap-4">
                                             {(() => {
                                                 const currentMonthStr = `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
                                                 const isExcluded = (t: any) => {
@@ -2475,28 +2483,28 @@ const App: React.FC = () => {
                                                     const Icon = s.icon;
 
                                                     return (
-                                                        <button key={cat} onClick={() => handleFilter('category', cat)} className="bg-white rounded-2xl lg:rounded-3xl p-3 lg:p-4 border border-slate-50 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:gap-4 group hover:shadow-md transition-all overflow-hidden w-full text-left">
+                                                        <button key={cat} onClick={() => handleFilter('category', cat)} className="bg-white rounded-2xl lg:rounded-3xl p-2.5 lg:p-3.5 border border-slate-50 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-2.5 lg:gap-3 group hover:shadow-md transition-all overflow-hidden w-full text-left">
                                                             <div className="flex items-center gap-3 w-full sm:w-auto">
                                                                 <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl ${s.bg} ${s.text} flex items-center justify-center shrink-0`}>
                                                                     <Icon size={20} strokeWidth={2.5} className="lg:w-6 lg:h-6" />
                                                                 </div>
-                                                                <div className="flex flex-col sm:hidden overflow-hidden flex-1">
-                                                                    <span className="text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">{cat}</span>
-                                                                    <span className="text-sm lg:text-base font-black text-slate-800 tracking-tight truncate">
+                                                                 <div className="flex flex-col sm:hidden flex-1">
+                                                                    <span className="text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest">{cat}</span>
+                                                                    <span className="text-sm lg:text-base font-black text-slate-800 tracking-tight">
                                                                         {formatCurrency(amount)}
                                                                     </span>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex-1 flex flex-col gap-0.5 overflow-hidden w-full">
-                                                                <span className="hidden sm:inline text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">{cat}</span>
-                                                                <span className="hidden sm:inline text-sm lg:text-base font-black text-slate-800 tracking-tight truncate">
+                                                            <div className="flex-1 flex flex-col gap-0.5 w-full">
+                                                                <span className="hidden sm:inline text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest">{cat}</span>
+                                                                <span className="hidden sm:inline text-sm lg:text-base font-black text-slate-800 tracking-tight">
                                                                     {formatCurrency(amount)}
                                                                 </span>
                                                                 <div className="w-full bg-slate-100 h-1 rounded-full mt-0.5 lg:mt-1 overflow-hidden">
                                                                     <div className={`h-full ${s.bar} rounded-full`} style={{ width: `${percent}%` }}></div>
                                                                 </div>
                                                                 
-                                                                <div className="flex flex-col gap-1 mt-2 text-[10px] lg:text-xs font-bold w-full">
+                                                                <div className="flex flex-col gap-1 mt-1 text-[10px] lg:text-xs font-bold w-full">
                                                                     <div className="flex items-center justify-between text-emerald-600 bg-emerald-50/70 px-2 py-0.5 rounded-md">
                                                                         <span>Pago:</span>
                                                                         <span className="font-extrabold">{formatCurrency(paidAmount)}</span>
@@ -2569,6 +2577,19 @@ const App: React.FC = () => {
                                     onUpdateSettlements={handleUpdateSettlements} 
                                     onBack={() => setView('home')}
                                 />
+                            </motion.div>
+                        )}
+
+                        {view === 'savings' && (
+                            <motion.div
+                                key="savings"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.5 }}
+                                className="w-full flex flex-col gap-8 max-w-7xl mx-auto px-4 lg:px-8 pb-8"
+                            >
+                                <SavingsPlanner monthData={monthData} currencyFormatter={formatCurrency} />
                             </motion.div>
                         )}
 
