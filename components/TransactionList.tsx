@@ -81,6 +81,12 @@ const getGroupColors = (key: string = '') => {
         badge: 'bg-black/15 text-slate-950 border-black/20',
         btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
+    if (key === 'CLAUDIO SILVA' || key.includes('CLAUDIO')) return { 
+        header: 'bg-teal-600 text-slate-950', 
+        card: 'bg-teal-50/70 border-teal-200/60',
+        badge: 'bg-black/15 text-slate-950 border-black/20',
+        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
+    };
     if (key === 'LILI TORRES') return { 
         header: 'bg-yellow-400 text-slate-950', 
         card: 'bg-yellow-50/70 border-yellow-200/60',
@@ -189,6 +195,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
             'MORADIA',
             'MARCIA BRITO',
             'MARCIA BISPO',
+            'CLAUDIO SILVA',
             'LILI TORRES',
             'REBECCA BRITO',
             'JADY',
@@ -216,7 +223,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
     }
 
     const formatDateHeader = (key: string) => {
-        if (key.includes('Distribuição') || key === 'MORADIA' || key === 'MARCIA BRITO' || key === 'MARCIA BISPO' || key === 'LILI TORRES' || key === 'REBECCA BRITO' || key === 'JADY' || key === 'IAGO' || key === 'DÍVIDAS NA RUA' || key === 'AVULSO' || key === 'Sem Data') return key;
+        if (key.includes('Distribuição') || key === 'MORADIA' || key === 'MARCIA BRITO' || key === 'MARCIA BISPO' || key === 'CLAUDIO SILVA' || key === 'LILI TORRES' || key === 'REBECCA BRITO' || key === 'JADY' || key === 'IAGO' || key === 'DÍVIDAS NA RUA' || key === 'AVULSO' || key === 'Sem Data') return key;
         const [year, month, day] = key.split('-');
         if (!year || !month || !day) return key;
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));

@@ -61,9 +61,10 @@ interface ThirdPartyDebt {
   installments: number;
   startYear: number;
   startMonth: number;
-  card: 'MARCIA BRITO' | 'MARCIA BISPO' | 'LILI TORRES' | 'REBECCA BRITO' | 'JADY' | 'IAGO (NUBANK)';
+  card: 'MARCIA BRITO' | 'MARCIA BISPO' | 'LILI TORRES' | 'REBECCA BRITO' | 'JADY' | 'IAGO (NUBANK)' | 'CLAUDIO SILVA';
   isPausedInJune?: boolean;
   isVariableOnlyInAugust?: boolean;
+  customAmounts?: number[];
 }
 
 const DEBT_ITEMS_CONFIG: ThirdPartyDebt[] = [
@@ -83,7 +84,11 @@ const DEBT_ITEMS_CONFIG: ThirdPartyDebt[] = [
   // MARCIA BISPO
   { name: 'Celular da Marcelly', amount: 385.74, totalAmount: 4628.88, installments: 12, startYear: 2026, startMonth: 3, card: 'MARCIA BISPO' },
   { name: 'Empréstimo com Marcia Bispo', amount: 100.00, totalAmount: 400.00, installments: 4, startYear: 2026, startMonth: 4, card: 'MARCIA BISPO', isPausedInJune: true },
-  { name: 'Novo Empréstimo (Out/2026)', amount: 250.00, totalAmount: 1000.00, installments: 4, startYear: 2026, startMonth: 10, card: 'MARCIA BISPO' },
+  { name: 'Empréstimo para pagar as contas de Abril (Marcia Bispo)', amount: 250.00, totalAmount: 1000.00, installments: 4, startYear: 2026, startMonth: 10, card: 'MARCIA BISPO' },
+  { name: 'Empréstimo para pagar as contas de Setembro (Marcia Bispo)', amount: 300.00, totalAmount: 1500.00, installments: 5, startYear: 2026, startMonth: 10, card: 'MARCIA BISPO' },
+
+  // CLAUDIO SILVA
+  { name: 'Empréstimo para pagar as contas de Setembro (Claudio Silva)', amount: 150.00, totalAmount: 500.00, installments: 3, startYear: 2026, startMonth: 10, card: 'CLAUDIO SILVA', customAmounts: [150.00, 150.00, 200.00] },
 
   // LILI TORRES
   { name: 'Empréstimo com Lili', amount: 800.00, totalAmount: 4000.00, installments: 5, startYear: 2026, startMonth: 7, card: 'LILI TORRES' },
@@ -138,8 +143,8 @@ const getInstallmentForMonth = (item: ThirdPartyDebt, year: number, month: numbe
     return null;
   }
 
-  // Account for the June 2026 pause for Marcia Bispo loan
-  if (item.card === 'MARCIA BISPO' && item.name.includes('Empréstimo')) {
+  // Account for the June 2026 pause for Marcia Bispo loan (only the original loan)
+  if (item.card === 'MARCIA BISPO' && item.name === 'Empréstimo com Marcia Bispo') {
     if (year === 2026 && month === 6) {
       return null; // Paused
     }
@@ -152,7 +157,9 @@ const getInstallmentForMonth = (item: ThirdPartyDebt, year: number, month: numbe
   const diffMonths = (year - startY) * 12 + (month - startM);
   if (diffMonths >= 0 && diffMonths < item.installments) {
     const current = diffMonths + 1;
-    let amount = item.amount;
+    let amount = item.customAmounts && item.customAmounts[current - 1] !== undefined
+      ? item.customAmounts[current - 1]
+      : item.amount;
     // Overriding Gol Linhas amount for first installment (includes boarding tax)
     if (item.name.includes('Gol Linhas') && current === 1) {
       amount = 394.20;
@@ -1144,6 +1151,7 @@ Seja direto, encorajador, prático e utilize formatação em markdown limpa e bo
             const cardsList = [
               { id: 'MARCIA BRITO', name: 'Cartão Márcia Brito (Você usa)', color: 'border-amber-300', bgColor: 'bg-amber-50', textColor: 'text-amber-800', items: [] as typeof activeDebtsForMonth },
               { id: 'MARCIA BISPO', name: 'Cartão Márcia Bispo', color: 'border-purple-300', bgColor: 'bg-purple-50', textColor: 'text-purple-800', items: [] as typeof activeDebtsForMonth },
+              { id: 'CLAUDIO SILVA', name: 'Claudio Silva', color: 'border-emerald-300', bgColor: 'bg-emerald-50', textColor: 'text-emerald-800', items: [] as typeof activeDebtsForMonth },
               { id: 'LILI TORRES', name: 'Cartão Lili Torres', color: 'border-teal-300', bgColor: 'bg-teal-50', textColor: 'text-teal-800', items: [] as typeof activeDebtsForMonth },
               { id: 'REBECCA BRITO', name: 'Cartão Rebecca Brito (Cidadania)', color: 'border-blue-300', bgColor: 'bg-blue-50', textColor: 'text-blue-800', items: [] as typeof activeDebtsForMonth },
               { id: 'JADY', name: 'Cartão Jady', color: 'border-rose-300', bgColor: 'bg-rose-50', textColor: 'text-rose-800', items: [] as typeof activeDebtsForMonth },
@@ -1159,7 +1167,7 @@ Seja direto, encorajador, prático e utilize formatação em markdown limpa e bo
             const getEndMonthName = (item: ThirdPartyDebt) => {
               let startY = item.startYear;
               let startM = item.startMonth;
-              if (item.card === 'MARCIA BISPO' && item.name.includes('Empréstimo')) {
+              if (item.card === 'MARCIA BISPO' && item.name === 'Empréstimo com Marcia Bispo') {
                 startM = item.startMonth + 1;
               }
               const totalMonths = item.installments;

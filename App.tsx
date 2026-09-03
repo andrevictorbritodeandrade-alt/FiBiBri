@@ -311,6 +311,121 @@ const App: React.FC = () => {
         }
     }, [monthData, currentYear, currentMonth]);
 
+    // Ensure PASSAGENS PARA SALVADOR is removed from Iago in Nov 2026, Dec 2026, and Jan 2027 to avoid duplication with PASSAGENS AÉREAS (IAGO)
+    useEffect(() => {
+        if (!monthData) return;
+        const isDuplicatedMonth = (currentYear === 2026 && (currentMonth === 11 || currentMonth === 12)) || (currentYear === 2027 && currentMonth === 1);
+        if (!isDuplicatedMonth) return;
+
+        const hasPassagensSalvador = monthData.expenses.some(e => {
+            const desc = (e.description || '').toUpperCase();
+            return desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (e.id && e.id.includes("passagens_salvador"));
+        }) || monthData.avulsosItems.some(a => {
+            const desc = (a.description || '').toUpperCase();
+            return desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (a.id && a.id.includes("passagens_salvador"));
+        });
+
+        if (hasPassagensSalvador) {
+            const updatedExpenses = monthData.expenses.filter(e => {
+                const desc = (e.description || '').toUpperCase();
+                return !(desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (e.id && e.id.includes("passagens_salvador")));
+            });
+            const updatedAvulsos = monthData.avulsosItems.filter(a => {
+                const desc = (a.description || '').toUpperCase();
+                return !(desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (a.id && a.id.includes("passagens_salvador")));
+            });
+            const updated = {
+                ...monthData,
+                expenses: updatedExpenses,
+                avulsosItems: updatedAvulsos,
+                updatedAt: Date.now()
+            };
+            saveData(updated, currentYear, currentMonth);
+        }
+    }, [monthData, currentYear, currentMonth]);
+
+    // Ensure loan normalization: Rename old Marcia Bispo loan, add new Marcia Bispo September loan, add Claudio Silva September loan
+    useEffect(() => {
+        if (!monthData) return;
+        let needsUpdate = false;
+        let updatedExpenses = [...monthData.expenses];
+
+        // 1. Rename any old Marcia Bispo loan name
+        updatedExpenses = updatedExpenses.map(e => {
+            const desc = (e.description || '').toUpperCase();
+            if (desc.includes("NOVO EMPRÉSTIMO COM MARCIA BISPO") || desc.includes("NOVO EMPRESTIMO COM MARCIA BISPO") || desc.includes("NOVO EMPRÉSTIMO (OUT") || desc.includes("NOVO EMPRESTIMO (OUT")) {
+                needsUpdate = true;
+                return {
+                    ...e,
+                    description: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE ABRIL (MARCIA BISPO)",
+                    group: "MARCIA BISPO"
+                };
+            }
+            return e;
+        });
+
+        // 2. Marcia Bispo September loan: 1500 in 5 installments of 300 from Oct 2026 to Feb 2027
+        const mbStartYear = 2026;
+        const mbStartMonth = 10;
+        const mbDiff = (currentYear - mbStartYear) * 12 + (currentMonth - mbStartMonth);
+        if (mbDiff >= 0 && mbDiff < 5) {
+            const currentInst = mbDiff + 1;
+            const hasMBSeptemberLoan = updatedExpenses.some(e => {
+                const d = (e.description || '').toUpperCase();
+                return (d.includes('SETEMBRO') && d.includes('MARCIA BISPO') && (d.includes('EMPRÉSTIMO') || d.includes('EMPRESTIMO')));
+            });
+            if (!hasMBSeptemberLoan) {
+                needsUpdate = true;
+                updatedExpenses.push({
+                    id: `fin_emprestimo_setembro_marcia_bispo_${currentInst}`,
+                    description: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (MARCIA BISPO)',
+                    amount: 300.00,
+                    category: 'Dívidas',
+                    paid: false,
+                    dueDate: `${currentYear}-${currentMonth.toString().padStart(2, '0')}-15`,
+                    installments: { current: currentInst, total: 5 },
+                    group: 'MARCIA BISPO'
+                });
+            }
+        }
+
+        // 3. Claudio Silva September loan: 500 in 3 installments (150, 150, 200) from Oct 2026 to Dec 2026
+        const csStartYear = 2026;
+        const csStartMonth = 10;
+        const csDiff = (currentYear - csStartYear) * 12 + (currentMonth - csStartMonth);
+        if (csDiff >= 0 && csDiff < 3) {
+            const currentInst = csDiff + 1;
+            const csAmounts = [150.00, 150.00, 200.00];
+            const currentAmount = csAmounts[csDiff];
+            const hasCSSeptemberLoan = updatedExpenses.some(e => {
+                const d = (e.description || '').toUpperCase();
+                return (d.includes('CLAUDIO SILVA') || d.includes('CLAUDIO')) && (d.includes('EMPRÉSTIMO') || d.includes('EMPRESTIMO') || d.includes('SETEMBRO'));
+            });
+            if (!hasCSSeptemberLoan) {
+                needsUpdate = true;
+                updatedExpenses.push({
+                    id: `fin_emprestimo_setembro_claudio_silva_${currentInst}`,
+                    description: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (CLAUDIO SILVA)',
+                    amount: currentAmount,
+                    category: 'Dívidas',
+                    paid: false,
+                    dueDate: `${currentYear}-${currentMonth.toString().padStart(2, '0')}-15`,
+                    installments: { current: currentInst, total: 3 },
+                    group: 'CLAUDIO SILVA'
+                });
+            }
+        }
+
+        if (needsUpdate) {
+            const updated = {
+                ...monthData,
+                expenses: updatedExpenses,
+                updatedAt: Date.now()
+            };
+            saveData(updated, currentYear, currentMonth);
+        }
+    }, [monthData, currentYear, currentMonth]);
+
     // Ref for accessing latest data in closures/listeners
     const monthDataRef = useRef<MonthData | null>(null);
     const unsubscribeRef = useRef<(() => void) | null>(null);
@@ -385,13 +500,22 @@ const App: React.FC = () => {
 
         // If data has already been saved or loaded with updatedAt > 0, preserve 100% of the user's modifications!
         if (data.updatedAt && data.updatedAt > 0) {
+            const isNovDec26OrJan27 = (year === 2026 && (month === 11 || month === 12)) || (year === 2027 && month === 1);
             data.incomes = (data.incomes || []).map(i => ({
                 ...i,
                 amount: Number(i.amount) || 0,
                 paid: !!i.paid,
                 skipped: !!i.skipped
             }));
-            data.expenses = (data.expenses || []).map(e => {
+            data.expenses = (data.expenses || []).filter(e => {
+                if (isNovDec26OrJan27) {
+                    const desc = (e.description || '').toUpperCase();
+                    if (desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (e.id && e.id.includes("passagens_salvador"))) {
+                        return false;
+                    }
+                }
+                return true;
+            }).map(e => {
                 const desc = (e.description || '').toUpperCase();
                 const isMarciaBrito = e.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && e.group !== 'MARCIA BISPO');
                 const isPaid = (year === 2026 && month === 9 && isMarciaBrito) ? true : !!e.paid;
@@ -403,7 +527,15 @@ const App: React.FC = () => {
                     skipped: !!e.skipped
                 };
             });
-            data.avulsosItems = (data.avulsosItems || []).map(a => {
+            data.avulsosItems = (data.avulsosItems || []).filter(a => {
+                if (isNovDec26OrJan27) {
+                    const desc = (a.description || '').toUpperCase();
+                    if (desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (a.id && a.id.includes("passagens_salvador"))) {
+                        return false;
+                    }
+                }
+                return true;
+            }).map(a => {
                 const desc = (a.description || '').toUpperCase();
                 const isMarciaBrito = a.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && a.group !== 'MARCIA BISPO');
                 const isPaid = (year === 2026 && month === 9 && isMarciaBrito) ? true : !!a.paid;
@@ -1197,21 +1329,28 @@ const App: React.FC = () => {
                 addOrUpdateIagoExpense("UBER", 19.00, "uber_iago", null);
             }
             if (iagoNewInst >= 1 && iagoNewInst <= 6) {
-                const targetPassagensAmount = 216.94;
-                addOrUpdateIagoExpense("PASSAGENS PARA SALVADOR", targetPassagensAmount, "passagens_salvador", { current: iagoNewInst, total: 6 });
+                const isDuplicatedMonth = (year === 2026 && (month === 11 || month === 12)) || (year === 2027 && month === 1);
+                if (!isDuplicatedMonth) {
+                    const targetPassagensAmount = 216.94;
+                    addOrUpdateIagoExpense("PASSAGENS PARA SALVADOR", targetPassagensAmount, "passagens_salvador", { current: iagoNewInst, total: 6 });
+                }
                 addOrUpdateIagoExpense("PRIMEIRO CARRO ALUGADO", 63.17, "primeiro_carro", { current: iagoNewInst, total: 6 });
                 addOrUpdateIagoExpense("SEGUNDO CARRO ALUGADO", 78.57, "segundo_carro", { current: iagoNewInst, total: 6 });
                 addOrUpdateIagoExpense("AIRBNB (HMT3Q9TBYB)", 190.74, "airbnb_hmt3q9tbyb", { current: iagoNewInst, total: 6 });
             }
             
             // Cleanup old variables and requested removals
+            const isNovDec26OrJan27 = (year === 2026 && (month === 11 || month === 12)) || (year === 2027 && month === 1);
             data.expenses = data.expenses.filter(e => {
                 const d = e.description.toUpperCase();
+                if (isNovDec26OrJan27 && (d.includes("PASSAGENS PARA SALVADOR") || d.includes("PASSAGENS SALVADOR") || (e.id && e.id.includes("passagens_salvador")))) {
+                    return false;
+                }
                 return !(d.includes("ESTADIA EM SALVADOR")) && 
                        !(d.includes("PRIMEIRA ESTADIA EM SALVADOR")) &&
                        !(d.includes("SEGUNDA ESTADIA EM SALVADOR")) &&
                        !(d.includes("COMPRA (697+697)")) &&
-                       !(d.includes("PASSAGENS AÉREAS")) &&
+                       !(d === "PASSAGENS AÉREAS" || d === "PASSAGENS AEREAS") &&
                        !(d.includes("GOL LINHAS")) &&
                        !(d.includes("02 JUL GOL LINHAS")) &&
                        !(d.includes("ALUGUEL DO CARRO")) &&
@@ -1266,7 +1405,13 @@ const App: React.FC = () => {
 
         // Explicit updates for September 2026 as requested by user
         if (year === 2026 && month === 9) {
-            data.expenses = data.expenses.map(e => {
+            data.expenses = data.expenses.filter(e => {
+                const desc = e.description.toUpperCase();
+                if (desc.includes('APPAI DA MARCELLY') || desc.includes('CELULAR DA MARCELLY')) {
+                    return false;
+                }
+                return true;
+            }).map(e => {
                 const desc = e.description.toUpperCase();
                 if (desc === 'ALUGUEL') {
                     return {
@@ -1292,21 +1437,6 @@ const App: React.FC = () => {
                         paid: true,
                         userModifiedPaid: true,
                         paidAt: e.paidAt || '2026-09-01T12:00:00Z'
-                    };
-                }
-                if (desc.includes('APPAI DA MARCELLY')) {
-                    return {
-                        ...e,
-                        amount: 110.00,
-                        group: 'MARCIA BISPO'
-                    };
-                }
-                if (desc.includes('CELULAR DA MARCELLY')) {
-                    return {
-                        ...e,
-                        amount: 385.74,
-                        installments: { current: 3, total: 12 },
-                        group: 'MARCIA BISPO'
                     };
                 }
                 if (desc.includes('CARTÃO DO ITAÚ DO ANDRÉ') || desc.includes('CARTAO DO ITAU DO ANDRE')) {
@@ -1903,7 +2033,7 @@ const App: React.FC = () => {
         if (name.includes('IAGO')) return 'from-emerald-800 to-emerald-950';
         if (name.includes('JADY')) return 'from-blue-800 to-indigo-950';
         if (name.includes('DÍVIDAS NA RUA') || name.includes('DIVIDAS NA RUA')) return 'from-sky-400 to-sky-600';
-        if (name.includes('CLAUDIO')) return 'from-purple-600 to-purple-800';
+        if (name.includes('CLAUDIO')) return 'from-teal-600 to-teal-800';
         return 'from-slate-700 to-slate-900';
     };
 
@@ -1923,35 +2053,21 @@ const App: React.FC = () => {
 
     return (
         <div className="flex h-screen w-full bg-[#f0fdf4] text-slate-900 font-sans overflow-hidden">
-            {/* Bottom Navigation - Fixed and styled to match screenshot */}
-            <nav className="fixed bottom-0 left-0 right-0 h-16 lg:h-20 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex items-center justify-around px-1 lg:px-8 z-[100] shadow-[0_-8px_30px_rgb(0,0,0,0.04)] gap-1">
+            {/* Bottom Navigation */}
+            <nav className="fixed bottom-0 left-0 right-0 h-16 lg:h-20 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex items-center justify-around px-4 lg:px-8 z-[100] shadow-[0_-8px_30px_rgb(0,0,0,0.04)] max-w-lg mx-auto md:max-w-none">
                 <button 
                     onClick={() => { setView('home'); setActiveTab('overview'); }}
-                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 w-20 lg:w-auto h-12 lg:h-auto rounded-xl transition-all font-black ${view === 'home' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
+                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-8 py-2 rounded-2xl transition-all font-black ${view === 'home' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
                 >
-                    <HomeIcon size={18} className="lg:w-5 lg:h-5" />
-                    <span className="text-[9px] lg:text-sm uppercase tracking-tighter">Visão</span>
+                    <HomeIcon size={20} className="lg:w-5 lg:h-5" />
+                    <span className="text-[10px] lg:text-sm uppercase tracking-wider">Visão</span>
                 </button>
                 <button 
                     onClick={() => { setView('transactions'); }}
-                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 w-20 lg:w-auto h-12 lg:h-auto rounded-xl transition-all font-black ${view === 'transactions' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
+                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-8 py-2 rounded-2xl transition-all font-black ${view === 'transactions' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
                 >
-                    <ShoppingBag size={18} className="lg:w-5 lg:h-5" />
-                    <span className="text-[9px] lg:text-sm uppercase tracking-tighter">Extrato</span>
-                </button>
-                <button 
-                    onClick={() => { setView('statistics'); }}
-                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 w-20 lg:w-auto h-12 lg:h-auto rounded-xl transition-all font-black ${view === 'statistics' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
-                >
-                    <TrendingUp size={18} className="lg:w-5 lg:h-5" />
-                    <span className="text-[9px] lg:text-sm uppercase tracking-tighter">Relatórios</span>
-                </button>
-                <button 
-                    onClick={() => { setView('flightPlan'); }}
-                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 w-20 lg:w-auto h-12 lg:h-auto rounded-xl transition-all font-black ${view === 'flightPlan' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
-                >
-                    <Target size={18} className="lg:w-5 lg:h-5" />
-                    <span className="text-[9px] lg:text-sm uppercase tracking-tighter">Plano de Voo</span>
+                    <ShoppingBag size={20} className="lg:w-5 lg:h-5" />
+                    <span className="text-[10px] lg:text-sm uppercase tracking-wider">Extrato</span>
                 </button>
             </nav>
 
@@ -2248,73 +2364,7 @@ const App: React.FC = () => {
                                                     );
                                                 })()}
                                             </div>
-
-                                            {/* Open Debts Detailed List */}
-                                            {(() => {
-                                                const currentMonthStr = `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
-                                                const isExcluded = (t: Transaction) => {
-                                                    if (t.skipped) return true;
-                                                    if (!t.isSuspended) return false;
-                                                    if (!t.suspendedUntil) return true;
-                                                    return currentMonthStr < t.suspendedUntil;
-                                                };
-                                                const unpaidItems = [
-                                                    ...monthData.expenses.filter(e => !isExcluded(e) && !e.paid),
-                                                    ...monthData.avulsosItems.filter(e => !isExcluded(e) && !e.paid)
-                                                ].sort((a, b) => a.description.localeCompare(b.description, 'pt-BR', { sensitivity: 'base' }));
-
-                                                if (unpaidItems.length === 0) {
-                                                    return (
-                                                        <div className="bg-emerald-50/30 border border-emerald-150 rounded-2xl p-4 text-center text-emerald-800 font-bold text-sm">
-                                                            🎉 Parabéns! Não há contas em aberto pendentes para este mês.
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return (
-                                                    <div className="bg-white rounded-2xl border border-slate-100 p-4 lg:p-6 shadow-sm">
-                                                        <h3 className="text-xs lg:text-sm font-black text-slate-700 uppercase tracking-wider mb-4 flex items-center justify-between">
-                                                            <span>Relação de Contas em Aberto ({unpaidItems.length})</span>
-                                                            <span className="text-[10px] text-slate-400 font-extrabold normal-case">Dívidas sem marcar como pagas</span>
-                                                        </h3>
-                                                        <div className="flex flex-col gap-2.5 max-h-[280px] overflow-y-auto pr-1">
-                                                            {unpaidItems.map(item => (
-                                                                <div key={item.id} className="flex items-center justify-between p-2.5 hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-100">
-                                                                    <div className="flex items-center gap-2.5 min-w-0">
-                                                                        <span className="text-sm select-none shrink-0 opacity-80">
-                                                                            {item.category === 'Moradia' ? '🏠' :
-                                                                             item.category === 'Alimentação' ? '🛒' :
-                                                                             item.category === 'Transporte' ? '🚗' :
-                                                                             item.category === 'Saúde' ? '💊' :
-                                                                             item.category === 'Educação' ? '📚' :
-                                                                             item.category === 'Lazer' ? '🎉' :
-                                                                             item.category === 'Dívidas' ? '💸' : '📝'}
-                                                                        </span>
-                                                                        <div className="flex flex-col min-w-0">
-                                                                            <span className="text-xs lg:text-sm font-black text-slate-800 truncate">
-                                                                                {item.description}
-                                                                            </span>
-                                                                            <span className="text-[9px] lg:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                                                                {item.group || item.category} {item.installments ? `• ${item.installments.current}/${item.installments.total}` : ''}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <span className="text-xs lg:text-sm font-black text-slate-800 whitespace-nowrap ml-2">
-                                                                        {formatCurrency(item.amount)}
-                                                                    </span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })()}
                                         </div>
-
-                                        {/* DAILY PALPABLE BALANCE TRACKER */}
-                                        <DailyBalanceTracker 
-                                            dailyBalances={monthData.dailyBalances || []} 
-                                            onUpdateBalances={handleUpdateDailyBalances} 
-                                        />
 
                                         {/* EXPENSES BY CATEGORY CARD */}
                                         <div className="bg-white/40 backdrop-blur-md rounded-3xl lg:rounded-[2.5rem] p-4 lg:p-8 border border-white/60 shadow-xl shadow-slate-200/40 mb-6 lg:mb-8">

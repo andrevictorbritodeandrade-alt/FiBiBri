@@ -293,7 +293,9 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { desc: "COMPRA DE TÊNIS", totalAmount: 619.98, cat: "Outros", day: 10, installments: 2, sY: 2026, sM: 6, group: 'JADY' },
         { desc: "COMPRA DE MAQUIAGEM", totalAmount: 232.00, cat: "Outros", day: 10, installments: 2, sY: 2026, sM: 6, group: 'JADY' },
         { desc: "EMPRÉSTIMO COM MARCIA BISPO", totalAmount: 400.00, cat: "Dívidas", day: 15, installments: 4, sY: 2026, sM: 4, group: 'MARCIA BISPO' },
-        { desc: "NOVO EMPRÉSTIMO COM MARCIA BISPO (OUTUBRO)", totalAmount: 1000.00, cat: "Dívidas", day: 15, installments: 4, sY: 2026, sM: 10, group: 'MARCIA BISPO' },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE ABRIL (MARCIA BISPO)", totalAmount: 1000.00, cat: "Dívidas", day: 15, installments: 4, sY: 2026, sM: 10, group: 'MARCIA BISPO' },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (MARCIA BISPO)", totalAmount: 1500.00, cat: "Dívidas", day: 15, installments: 5, sY: 2026, sM: 10, group: 'MARCIA BISPO' },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (CLAUDIO SILVA)", totalAmount: 500.00, cat: "Dívidas", day: 15, installments: 3, sY: 2026, sM: 10, group: 'CLAUDIO SILVA', customAmounts: [150.00, 150.00, 200.00] },
         { desc: "REMÉDIO PARA CUPIM", totalAmount: 37.00, cat: "Saúde", day: 28, installments: 1, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
         { desc: "MÃO DE OBRA DO DAVI", totalAmount: 372.82, cat: "Moradia", day: 12, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
         { desc: "KR AUTOPEÇAS", totalAmount: 291.00, cat: "Transporte", day: 12, installments: 7, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
@@ -334,13 +336,27 @@ export const generateMonthData = (year: number, month: number): MonthData => {
             return;
         }
 
+        // Passagens para Salvador: remove from Nov 2026, Dec 2026, Jan 2027 to avoid duplicate with Passagens Aéreas (Iago)
+        if (f.desc === "PASSAGENS PARA SALVADOR" && ((year === 2026 && (month === 11 || month === 12)) || (year === 2027 && month === 1))) {
+            return;
+        }
+
         let startYearOverride = f.sY;
         let startMonthOverride = f.sM;
         if (f.desc === "EMPRÉSTIMO COM MARCIA BISPO" && (year > 2026 || (year === 2026 && month > 6))) {
             startMonthOverride = f.sM + 1; // resumes in July 2026 as installment 3/4
         }
 
-        const inst = getInstallmentInfo(startYearOverride, startMonthOverride, f.installments, year, month);
+        let inst = getInstallmentInfo(startYearOverride, startMonthOverride, f.installments, year, month);
+        if (f.desc === "CELULAR DA MARCELLY" && (year > 2026 || (year === 2026 && month >= 10))) {
+            const monthsPassedSinceOct = (year - 2026) * 12 + (month - 10);
+            const currentInst = 3 + monthsPassedSinceOct;
+            if (currentInst <= f.installments) {
+                inst = { current: currentInst, total: f.installments };
+            } else {
+                inst = null;
+            }
+        }
         if (inst) {
             let isPaid = false;
             if (isJan2026) {
@@ -352,7 +368,9 @@ export const generateMonthData = (year: number, month: number): MonthData => {
             if (year === 2026 && month === 4) {
                 if (paidInApr2026.some(p => f.desc.toUpperCase().includes(p))) isPaid = true;
             }
-            const installmentAmount = f.totalAmount / f.installments;
+            const installmentAmount = (f as any).customAmounts && (f as any).customAmounts[inst.current - 1] !== undefined 
+                ? (f as any).customAmounts[inst.current - 1] 
+                : (f.totalAmount / f.installments);
             
             newExpenses.push({
                 id: `fin_${f.desc.replace(/\s/g,'')}_${inst.current}`,
