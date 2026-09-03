@@ -61,12 +61,16 @@ const Header: React.FC<HeaderProps> = ({
                 <div className="flex items-center gap-2">
                     <button 
                         onClick={onSync}
-                        className={`p-1.5 rounded-lg transition-all border border-emerald-900/10 shadow-lg ${
-                            syncStatus === 'online' ? 'bg-emerald-900 text-white' :
-                            syncStatus === 'syncing' ? 'bg-blue-800 text-white' : 'bg-white/50 text-emerald-900'
+                        title={syncStatus === 'online' ? 'Sincronizado na Nuvem com Sucesso' : syncStatus === 'syncing' ? 'Sincronizando dados...' : 'Modo Offline (Salvo localmente no dispositivo)'}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all border border-emerald-900/15 shadow-sm text-xs font-black uppercase tracking-wider ${
+                            syncStatus === 'online' ? 'bg-emerald-900 text-emerald-100 hover:bg-emerald-800' :
+                            syncStatus === 'syncing' ? 'bg-blue-800 text-blue-100' : 'bg-amber-100 text-amber-900 border-amber-300'
                         }`}
                     >
-                        <RefreshCw size={16} strokeWidth={4} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
+                        <RefreshCw size={14} strokeWidth={3.5} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
+                        <span className="text-[11px]">
+                            {syncStatus === 'online' ? 'Nuvem OK' : syncStatus === 'syncing' ? 'Sincronizando...' : 'Salvo Local'}
+                        </span>
                     </button>
                 </div>
             </div>

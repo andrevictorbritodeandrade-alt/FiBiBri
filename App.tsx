@@ -149,18 +149,7 @@ const App: React.FC = () => {
         saveData({ ...monthData, dailyBalances: newDailyBalances }, currentYear, currentMonth);
     };
 
-    // Force refresh to pull updated categories and grouping (v36 for Itau paid & pen update)
-    useEffect(() => {
-        const forceUpdateV36 = localStorage.getItem('force_update_v36_itau_andre_paid');
-        if (!forceUpdateV36) {
-            localStorage.removeItem('financeData_2026_9');
-            try { localStorage.setItem('force_update_v36_itau_andre_paid', 'true'); } catch (e) { console.warn("LocalStorage Quota Exceeded:", e); }
-        }
-    }, []);
-
-    
-
-    // Derived Santander balance based on exact User Calculation (May 2026 Cycle)
+    // Santander balance based on User Calculation (May 2026 Cycle)
     useEffect(() => {
         if (!monthData) return;
         
@@ -281,6 +270,47 @@ const App: React.FC = () => {
         }
     }, [monthData]);
 
+    // Ensure all Marcia Brito items are marked as paid in September 2026 as requested
+    useEffect(() => {
+        if (!monthData || currentYear !== 2026 || currentMonth !== 9) return;
+        const hasUnpaidMarciaBrito = monthData.expenses.some(e => {
+            const desc = (e.description || '').toUpperCase();
+            const isMarciaBrito = e.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && e.group !== 'MARCIA BISPO');
+            return isMarciaBrito && !e.paid;
+        }) || monthData.avulsosItems.some(a => {
+            const desc = (a.description || '').toUpperCase();
+            const isMarciaBrito = a.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && a.group !== 'MARCIA BISPO');
+            return isMarciaBrito && !a.paid;
+        });
+
+        if (hasUnpaidMarciaBrito) {
+            const updatedExpenses = monthData.expenses.map(e => {
+                const desc = (e.description || '').toUpperCase();
+                const isMarciaBrito = e.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && e.group !== 'MARCIA BISPO');
+                if (isMarciaBrito) {
+                    return { ...e, paid: true, paidAt: e.paidAt || '2026-09-02T12:00:00Z', userModifiedPaid: true };
+                }
+                return e;
+            });
+            const updatedAvulsos = monthData.avulsosItems.map(a => {
+                const desc = (a.description || '').toUpperCase();
+                const isMarciaBrito = a.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && a.group !== 'MARCIA BISPO');
+                if (isMarciaBrito) {
+                    return { ...a, paid: true, paidAt: a.paidAt || '2026-09-02T12:00:00Z', userModifiedPaid: true };
+                }
+                return a;
+            });
+
+            const updated = {
+                ...monthData,
+                expenses: updatedExpenses,
+                avulsosItems: updatedAvulsos,
+                updatedAt: Date.now()
+            };
+            saveData(updated, currentYear, currentMonth);
+        }
+    }, [monthData, currentYear, currentMonth]);
+
     // Ref for accessing latest data in closures/listeners
     const monthDataRef = useRef<MonthData | null>(null);
     const unsubscribeRef = useRef<(() => void) | null>(null);
@@ -314,21 +344,90 @@ const App: React.FC = () => {
         };
     }, []);
 
-    // NEW: Force sync on visibility change (when opening app from background) to ensure instant updates
+    // Online and Offline event listeners for instant connectivity awareness
+    useEffect(() => {
+        const handleOnline = () => {
+            setSyncStatus('syncing');
+            if (monthDataRef.current) {
+                saveData(monthDataRef.current, currentYear, currentMonth);
+            }
+            setupRealtimeListener(currentYear, currentMonth);
+        };
+        const handleOffline = () => {
+            setSyncStatus('offline');
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, [currentYear, currentMonth]);
+
+    // Force sync on visibility change (when opening app from background) to ensure instant updates
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                // Trigger a re-read if needed, though onSnapshot handles most.
-                // This ensures if the socket was paused, we wake it up.
                 console.log("App foregrounded, ensuring sync...");
+                if (isConfigured && auth?.currentUser) {
+                    setupRealtimeListener(currentYear, currentMonth);
+                }
             }
         };
         document.addEventListener("visibilitychange", handleVisibilityChange);
         return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-    }, []);
-
+    }, [currentYear, currentMonth]);
 
     const ensureSystemIntegrity = (data: MonthData, year: number, month: number): MonthData => {
+        if (!data) return generateMonthData(year, month);
+
+        // If data has already been saved or loaded with updatedAt > 0, preserve 100% of the user's modifications!
+        if (data.updatedAt && data.updatedAt > 0) {
+            data.incomes = (data.incomes || []).map(i => ({
+                ...i,
+                amount: Number(i.amount) || 0,
+                paid: !!i.paid,
+                skipped: !!i.skipped
+            }));
+            data.expenses = (data.expenses || []).map(e => {
+                const desc = (e.description || '').toUpperCase();
+                const isMarciaBrito = e.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && e.group !== 'MARCIA BISPO');
+                const isPaid = (year === 2026 && month === 9 && isMarciaBrito) ? true : !!e.paid;
+                return {
+                    ...e,
+                    amount: Number(e.amount) || 0,
+                    paid: isPaid,
+                    paidAt: isPaid ? (e.paidAt || '2026-09-02T12:00:00Z') : null,
+                    skipped: !!e.skipped
+                };
+            });
+            data.avulsosItems = (data.avulsosItems || []).map(a => {
+                const desc = (a.description || '').toUpperCase();
+                const isMarciaBrito = a.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && a.group !== 'MARCIA BISPO');
+                const isPaid = (year === 2026 && month === 9 && isMarciaBrito) ? true : !!a.paid;
+                return {
+                    ...a,
+                    amount: Number(a.amount) || 0,
+                    paid: isPaid,
+                    paidAt: isPaid ? (a.paidAt || '2026-09-02T12:00:00Z') : null,
+                    skipped: !!a.skipped
+                };
+            });
+            data.shoppingItems = data.shoppingItems || [];
+            data.bankAccounts = data.bankAccounts || [];
+            data.goals = data.goals || [];
+            data.bankReserves = data.bankReserves || { santander: 0, inter: 0, sofisa: 0 };
+            data.checkIn = data.checkIn || { isDone: false, date: null };
+            data.debtSettlements = data.debtSettlements || [
+                { id: 'set_nubank', description: 'Acordo Nubank (À Vista)', amount: 700, priority: 1, isPaid: false, notes: 'Pagamento via PIX' },
+                { id: 'set_itau_marcelly', description: 'Acordo Itaú Marcelly (À Vista)', amount: 400, priority: 2, isPaid: false, notes: 'Pagamento via PIX' }
+            ];
+            data.dailyBalances = data.dailyBalances || [];
+            return data;
+        }
+
         // PRESERVE USER METADATA: if the user explicitly clicked "paid", don't let hardcoded tweaks override it
         const originalUserModifications = new Map();
         [...data.expenses, ...data.avulsosItems, ...data.incomes].forEach(item => {
@@ -1244,7 +1343,7 @@ const App: React.FC = () => {
                 });
             }
 
-            // Marcia Brito installment counts and items for September 2026
+            // Marcia Brito installment counts and items for September 2026 (All marked as paid as requested)
             const mbOverrides: Array<{ match: (d: string) => boolean; desc: string; current: number; total: number; amount: number; cat: string }> = [
                 { match: d => d.includes('APPAI DO ANDRÉ') || d.includes('APPAI DO ANDRE') || (d.includes('APPAI') && d.includes('ANDRÉ')), desc: 'APPAI DO ANDRÉ', current: 9, total: 12, amount: 129.50, cat: 'Saúde' },
                 { match: d => d.includes('INTERMÉDICA DO ANDRÉ') || d.includes('INTERMEDICA DO ANDRE') || (d.includes('INTERMÉDICA') && d.includes('ANDRÉ')), desc: 'INTERMÉDICA DO ANDRÉ', current: 9, total: 12, amount: 123.00, cat: 'Saúde' },
@@ -1266,7 +1365,10 @@ const App: React.FC = () => {
                         amount: item.amount,
                         category: item.cat,
                         installments: { current: item.current, total: item.total },
-                        group: 'MARCIA BRITO'
+                        group: 'MARCIA BRITO',
+                        paid: true,
+                        paidAt: data.expenses[index].paidAt || '2026-09-02T12:00:00Z',
+                        userModifiedPaid: true
                     };
                 } else {
                     data.expenses.push({
@@ -1274,12 +1376,42 @@ const App: React.FC = () => {
                         description: item.desc,
                         amount: item.amount,
                         category: item.cat,
-                        paid: false,
+                        paid: true,
+                        paidAt: '2026-09-02T12:00:00Z',
                         dueDate: '2026-09-12',
                         installments: { current: item.current, total: item.total },
-                        group: 'MARCIA BRITO'
+                        group: 'MARCIA BRITO',
+                        userModifiedPaid: true
                     });
                 }
+            });
+
+            // Mark all items with group MARCIA BRITO as paid in September 2026
+            data.expenses = data.expenses.map(e => {
+                const desc = e.description.toUpperCase();
+                const isMarciaBrito = e.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && e.group !== 'MARCIA BISPO');
+                if (isMarciaBrito) {
+                    return {
+                        ...e,
+                        paid: true,
+                        paidAt: e.paidAt || '2026-09-02T12:00:00Z',
+                        userModifiedPaid: true
+                    };
+                }
+                return e;
+            });
+            data.avulsosItems = data.avulsosItems.map(a => {
+                const desc = a.description.toUpperCase();
+                const isMarciaBrito = a.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && a.group !== 'MARCIA BISPO');
+                if (isMarciaBrito) {
+                    return {
+                        ...a,
+                        paid: true,
+                        paidAt: a.paidAt || '2026-09-02T12:00:00Z',
+                        userModifiedPaid: true
+                    };
+                }
+                return a;
             });
 
             // Lili Torres items for September 2026
