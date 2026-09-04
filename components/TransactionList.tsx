@@ -107,9 +107,9 @@ const getGroupColors = (key: string = '') => {
         badge: 'bg-black/15 text-slate-950 border-black/20',
         btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
-    if (key === 'JADY') return { 
-        header: 'bg-blue-900 text-slate-950', 
-        card: 'bg-blue-50/70 border-blue-200/60',
+    if (key.includes('JADY')) return { 
+        header: 'bg-fuchsia-600 text-slate-950', 
+        card: 'bg-fuchsia-50/70 border-fuchsia-200/60',
         badge: 'bg-black/15 text-slate-950 border-black/20',
         btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
@@ -205,8 +205,8 @@ const TransactionList: React.FC<TransactionListProps> = ({
             'DÍVIDAS NA RUA',
             'AVULSO'
         ];
-        const idxA = priority.indexOf(a);
-        const idxB = priority.indexOf(b);
+        const idxA = priority.findIndex(p => a.toUpperCase().includes(p.toUpperCase()));
+        const idxB = priority.findIndex(p => b.toUpperCase().includes(p.toUpperCase()));
         if (idxA !== -1 && idxB !== -1) return idxA - idxB;
         if (idxA !== -1) return -1;
         if (idxB !== -1) return 1;
@@ -225,7 +225,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
     }
 
     const formatDateHeader = (key: string) => {
-        if (key.includes('Distribuição') || key === 'MORADIA' || key === 'MARCIA BRITO' || key === 'MARCIA BISPO' || key === 'CLAUDIO SILVA' || key === 'LILI TORRES' || key === 'REBECCA BRITO' || key === 'JADY' || key === 'IAGO' || key === 'DÍVIDAS NA RUA' || key === 'AVULSO' || key === 'Sem Data') return key;
+        if (key.includes('Distribuição') || key === 'MORADIA' || key === 'MARCIA BRITO' || key === 'MARCIA BISPO' || key === 'CLAUDIO SILVA' || key === 'LILI TORRES' || key === 'REBECCA BRITO' || key.includes('JADY') || key.includes('IAGO') || key === 'DÍVIDAS NA RUA' || key === 'AVULSO' || key === 'Sem Data') return key;
         const [year, month, day] = key.split('-');
         if (!year || !month || !day) return key;
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -349,24 +349,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
                         {(() => {
                             let items = groupItems;
                             if (key.includes('IAGO')) {
-                                const getIagoOrder = (desc: string) => {
-                                    const d = desc.toUpperCase();
-                                    if (d.includes('AIRBNB')) return 10;
-                                    if (d.includes('ACRÉSCIMO PASSAGEM') || d.includes('ACRESCIMO PASSAGEM')) return 20;
-                                    if (d.includes('PASSAGEM') || d.includes('PASSAGENS')) return 21;
-                                    if (d.includes('PRIMEIRO CARRO')) return 30;
-                                    if (d.includes('SEGUNDO CARRO')) return 31;
-                                    if (d.includes('CARRO')) return 32;
-                                    if (d.includes('INGRESSO')) return 40;
-                                    if (d.includes('EMPRÉSTIMO') || d.includes('EMPRESTIMO')) return 50;
-                                    if (d.includes('MULTISELO')) return 60;
-                                    if (d.includes('CLARO')) return 70;
-                                    if (d.includes('ABASTECIMENTO') || d.includes('POSTO')) return 80;
-                                    if (d.includes('UBER')) return 85;
-                                    if (d.includes('GUANABARA')) return 90;
-                                    return 100;
-                                };
-                                items = [...items].sort((a, b) => getIagoOrder(a.description) - getIagoOrder(b.description));
+                                items = [...items].sort((a, b) => 
+                                    a.description.localeCompare(b.description, 'pt-BR', { sensitivity: 'base' })
+                                );
                             }
                             return items.map(item => {
                             const isAllocation = key.includes('Distribuição');

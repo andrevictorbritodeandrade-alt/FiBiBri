@@ -10,11 +10,10 @@ export const getMonthName = (month: number) => MONTH_NAMES[month - 1];
 export const formatCurrency = (val: number, compact: boolean = false) => {
     // Round to 2 decimal places to avoid floating point issues
     const roundedVal = Math.round(val * 100) / 100;
-    const isWhole = roundedVal % 1 === 0;
     const numberFormatOptions: Intl.NumberFormatOptions = { 
         style: 'currency', 
         currency: 'BRL',
-        minimumFractionDigits: isWhole ? 0 : 2,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
         notation: compact ? "compact" : "standard"
     };
@@ -98,6 +97,12 @@ export const generateMonthData = (year: number, month: number): MonthData => {
     }
 
     // --- 13º SALÁRIO LOGIC ---
+    if (year === 2026 && month === 12) {
+        newIncomes.push(
+            { id: `inc_13_m_2026`, description: '13º SALÁRIO - MARCELLY', amount: 3436.22, paid: false, date: '2026-12-20', category: '13º Salário' },
+            { id: `inc_13_a_2026`, description: '13º SALÁRIO - ANDRÉ (7/12)', amount: 1877.79, paid: false, date: '2026-12-20', category: '13º Salário' }
+        );
+    }
     if (month === 7) {
         const amount13 = 1718.11; 
         newIncomes.push(
@@ -268,65 +273,61 @@ export const generateMonthData = (year: number, month: number): MonthData => {
     // Consolidate avulsos below
     // 2. INSTALLMENT EXPENSES
     const finiteConfig = [
-        { desc: "GUARDA ROUPAS", totalAmount: 914.48, cat: "Moradia", day: 12, installments: 5, sY: 2026, sM: 2, group: 'MARCIA BRITO' },
-        { desc: "CELULAR DA MARCELLY", totalAmount: 4628.88, cat: "Outros", day: 10, installments: 12, sY: 2026, sM: 3, group: 'MARCIA BISPO' },
-        { desc: "REFORMA DO SOFÁ DE CAXIAS", totalAmount: 575.00, cat: "Moradia", day: 12, installments: 5, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
-        { desc: "CONSERTO DO CARRO DE OUTUBRO", totalAmount: 1447.00, cat: "Transporte", day: 12, installments: 4, sY: 2025, sM: 11, group: 'MARCIA BRITO' },
-        { desc: "FACULDADE DA MARCELLY", totalAmount: 2026.80, cat: "Educação", day: 12, installments: 10, sY: 2025, sM: 12, group: 'MARCIA BRITO' },
-        { desc: "PASSAGENS AÉREAS JOBURG X CAPE TOWN", totalAmount: 1560.00, cat: "Lazer", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
-        { desc: "PASSAGENS DE ONIBUS RIO x SP", totalAmount: 438.00, cat: "Transporte", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
-        { desc: "MALA DO ANDRÉ", totalAmount: 179.00, cat: "Lazer", day: 12, installments: 3, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
-        { desc: "RENEGOCIAR CARREFOUR", totalAmount: 5000.00, cat: "Dívidas", day: 12, installments: 16, sY: 2025, sM: 12, group: 'MARCIA BRITO' },
-        { desc: "EMPRÉSTIMO COM LILI", totalAmount: 4000.00, cat: "Dívidas", day: 4, installments: 5, sY: 2026, sM: 7, group: 'LILI TORRES' },
-        { desc: "ESTADIA EM JOHANESBURGO", totalAmount: 1363.93, cat: "Lazer", day: 4, installments: 5, sY: 2026, sM: 3, group: 'LILI TORRES' },
-        { desc: "ESTADIA EM CIDADE DO CABO", totalAmount: 1197.00, cat: "Lazer", day: 4, installments: 5, sY: 2026, sM: 3, group: 'LILI TORRES' },
-        { desc: "ESTADIA DE VOLTA EM SAO PAULO", totalAmount: 358.20, cat: "Lazer", day: 4, installments: 4, sY: 2026, sM: 3, group: 'LILI TORRES' },
-        { desc: "ESTADIA DE IDA EM SAO PAULO", totalAmount: 289.44, cat: "Lazer", day: 4, installments: 4, sY: 2026, sM: 3, group: 'LILI TORRES' },
-        { desc: "PASSAGENS AÉREAS SP X JOBURG", totalAmount: 4038.96, cat: "Lazer", day: 4, installments: 8, sY: 2026, sM: 1, group: 'LILI TORRES' },
-        { desc: "COMPRA NA SHEIN (LILI)", totalAmount: 282.21, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
-        { desc: "COMPRA NA BRISA (LILI)", totalAmount: 260.01, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
-        { desc: "COMPRA NA DALUZ (LILI)", totalAmount: 168.00, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
-        { desc: "EMPRÉSTIMO VIAGEM NORDESTE (LILI)", totalAmount: 2015.40, cat: "Dívidas", day: 4, installments: 6, sY: 2026, sM: 8, group: 'LILI TORRES' },
-        { desc: "PRESENTE DO ANDRÉ (LILI)", totalAmount: 359.91, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 9, group: 'LILI TORRES' },
-        { desc: "CIDADANIA PORTUGUESA", totalAmount: 5180.00, cat: "Dívidas", day: 12, installments: 37, sY: 2024, sM: 11, group: 'REBECCA BRITO' },
-        { desc: "PASSEIO DE SAFARI", totalAmount: 3429.60, cat: "Lazer", day: 10, installments: 6, sY: 2026, sM: 3, group: 'JADY' },
-        { desc: "COMPRA DE TÊNIS", totalAmount: 619.98, cat: "Outros", day: 10, installments: 2, sY: 2026, sM: 6, group: 'JADY' },
-        { desc: "COMPRA DE MAQUIAGEM", totalAmount: 232.00, cat: "Outros", day: 10, installments: 2, sY: 2026, sM: 6, group: 'JADY' },
-        { desc: "EMPRÉSTIMO COM MARCIA BISPO", totalAmount: 400.00, cat: "Dívidas", day: 15, installments: 4, sY: 2026, sM: 4, group: 'MARCIA BISPO' },
-        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE ABRIL (MARCIA BISPO)", totalAmount: 1000.00, cat: "Dívidas", day: 15, installments: 4, sY: 2026, sM: 10, group: 'MARCIA BISPO' },
-        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (MARCIA BISPO)", totalAmount: 1500.00, cat: "Dívidas", day: 15, installments: 5, sY: 2026, sM: 10, group: 'MARCIA BISPO' },
-        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (CLAUDIO SILVA)", totalAmount: 500.00, cat: "Dívidas", day: 15, installments: 3, sY: 2026, sM: 10, group: 'CLAUDIO SILVA', customAmounts: [150.00, 150.00, 200.00] },
-        { desc: "REMÉDIO PARA CUPIM", totalAmount: 37.00, cat: "Saúde", day: 28, installments: 1, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
-        { desc: "MÃO DE OBRA DO DAVI", totalAmount: 372.82, cat: "Moradia", day: 12, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
-        { desc: "KR AUTOPEÇAS", totalAmount: 291.00, cat: "Transporte", day: 12, installments: 7, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
-        { desc: "FILHÃO AUTOPEÇAS", totalAmount: 120.00, cat: "Transporte", day: 12, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
-        { desc: "CABESOM", totalAmount: 179.00, cat: "Outros", day: 28, installments: 2, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
-        { desc: "REMÉDIOS (MARCIA BRITO)", totalAmount: 246.09, cat: "Saúde", day: 28, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
-        { desc: "ALINHAMENTO DO CARRO", totalAmount: 330.00, cat: "Transporte", day: 12, installments: 2, sY: 2026, sM: 7, group: 'MARCIA BRITO' },
-        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO", totalAmount: 1944.00, cat: "Dívidas", day: 20, installments: 4, sY: 2026, sM: 6, group: 'MARCIA BRITO' },
-        { desc: "PASSAGENS AÉREAS (IAGO)", totalAmount: 1394.00, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "DENTISTA", totalAmount: 750.00, cat: "Saúde", day: 12, installments: 3, sY: 2026, sM: 9, group: 'MARCIA BRITO' },
-        // IAGO (CARTÃO NUBANK) - AIRBNBS
-        { desc: "AIRBNB SALVADOR 16-18 JUL (hmjhtc29yf)", totalAmount: 417.85, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB MACEIÓ 17-19 JUL (hmepqps338)", totalAmount: 380.00, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB MACEIÓ 19-20 JUL (hm5kaqjy4j)", totalAmount: 163.00, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB ARACAJU 19-21 JUL (hm2ydd2j9t)", totalAmount: 313.03, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB (HMT3Q9TBYB)", totalAmount: 1144.44, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        // IAGO - PASSAGENS (ACRÉSCIMO DIRETO SOBRE PASSAGENS PARA SALVADOR)
-        { desc: "ACRÉSCIMO PASSAGEM AÉREA", totalAmount: 240.00, cat: "Lazer", day: 7, installments: 2, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "PASSAGENS PARA SALVADOR", totalAmount: 1301.64, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        // IAGO - CARROS ALUGADOS
-        { desc: "PRIMEIRO CARRO ALUGADO", totalAmount: 379.02, cat: "Transporte", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "SEGUNDO CARRO ALUGADO", totalAmount: 471.42, cat: "Transporte", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        // IAGO - OUTROS
-        { desc: "INGRESSO JOGO BAHIA", totalAmount: 428.68, cat: "Lazer", day: 7, installments: 2, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "EMPRÉSTIMO (IAGO)", totalAmount: 2499.96, cat: "Dívidas", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "CLAROFLEX ANDRÉ", totalAmount: 59.90, cat: "Moradia", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "CLAROFLEX MARCELLY", totalAmount: 44.90, cat: "Moradia", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ABASTECIMENTO 1", totalAmount: 275.00, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ABASTECIMENTO 2", totalAmount: 150.00, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "UBER", totalAmount: 19.00, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "COMPRAS GUANABARA", totalAmount: 923.54, cat: "Alimentação", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' }
+        { desc: "ACRÉSCIMO PASSAGEM AÉREA", totalAmount: 240.00, cat: "Lazer", day: 7, installments: 2, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (HMT3Q9TBYB)", totalAmount: 1144.44, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB ARACAJU 19-21 JUL (hm2ydd2j9t)", totalAmount: 570.06, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB MACEIÓ 17-19 JUL (hmepqps338)", totalAmount: 380.00, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB MACEIÓ 19-20 JUL (hm5kaqjy4j)", totalAmount: 163.00, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB SALVADOR 16-18 JUL (hmjhtc29yf)", totalAmount: 185.70, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "ALINHAMENTO DO CARRO", totalAmount: 330.00, cat: "Transporte", day: 12, installments: 2, sY: 2026, sM: 7, group: 'MARCIA BRITO' },
+        { desc: "CABESOM", totalAmount: 179.00, cat: "Outros", day: 28, installments: 2, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
+        { desc: "CELULAR DA MARCELLY", totalAmount: 4628.88, cat: "Outros", day: 10, installments: 12, sY: 2026, sM: 3, group: 'MARCIA BISPO' },
+        { desc: "CIDADANIA PORTUGUESA", totalAmount: 5180.00, cat: "Dívidas", day: 12, installments: 37, sY: 2024, sM: 11, group: 'REBECCA BRITO' },
+        { desc: "CLAROFLEX ANDRÉ", totalAmount: 59.90, cat: "Moradia", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "CLAROFLEX MARCELLY", totalAmount: 44.90, cat: "Moradia", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "COMPRA DE MAQUIAGEM", totalAmount: 232.00, cat: "Outros", day: 10, installments: 2, sY: 2026, sM: 6, group: 'JADY' },
+        { desc: "COMPRA DE TÊNIS", totalAmount: 619.98, cat: "Outros", day: 10, installments: 2, sY: 2026, sM: 6, group: 'JADY' },
+        { desc: "COMPRA NA BRISA (LILI)", totalAmount: 260.01, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
+        { desc: "COMPRA NA DALUZ (LILI)", totalAmount: 168.00, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
+        { desc: "COMPRA NA SHEIN (LILI)", totalAmount: 282.21, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
+        { desc: "COMPRAS GUANABARA", totalAmount: 923.54, cat: "Alimentação", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "CONSERTO DO CARRO DE OUTUBRO", totalAmount: 1447.00, cat: "Transporte", day: 12, installments: 4, sY: 2025, sM: 11, group: 'MARCIA BRITO' },
+        { desc: "DENTISTA", totalAmount: 750.00, cat: "Saúde", day: 12, installments: 3, sY: 2026, sM: 9, group: 'MARCIA BRITO' },
+        { desc: "EMPRÉSTIMO COM LILI", totalAmount: 4000.00, cat: "Dívidas", day: 4, installments: 5, sY: 2026, sM: 7, group: 'LILI TORRES' },
+        { desc: "EMPRÉSTIMO COM MARCIA BISPO", totalAmount: 400.00, cat: "Dívidas", day: 15, installments: 4, sY: 2026, sM: 4, group: 'MARCIA BISPO' },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE ABRIL (MARCIA BISPO)", totalAmount: 1000.00, cat: "Dívidas", day: 15, installments: 4, sY: 2026, sM: 10, group: 'MARCIA BISPO' },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO", totalAmount: 1944.00, cat: "Dívidas", day: 20, installments: 4, sY: 2026, sM: 6, group: 'MARCIA BRITO' },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (CLAUDIO SILVA)", totalAmount: 500.00, cat: "Dívidas", day: 15, installments: 3, sY: 2026, sM: 10, group: 'CLAUDIO SILVA', customAmounts: [150.00, 150.00, 200.00] },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (MARCIA BISPO)", totalAmount: 1500.00, cat: "Dívidas", day: 15, installments: 5, sY: 2026, sM: 10, group: 'MARCIA BISPO' },
+        { desc: "EMPRÉSTIMO PARA VIAJAR", totalAmount: 2499.96, cat: "Dívidas", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "EMPRÉSTIMO VIAGEM NORDESTE (LILI)", totalAmount: 2015.40, cat: "Dívidas", day: 4, installments: 6, sY: 2026, sM: 8, group: 'LILI TORRES' },
+        { desc: "ESTADIA DE IDA EM SAO PAULO", totalAmount: 289.44, cat: "Lazer", day: 4, installments: 4, sY: 2026, sM: 3, group: 'LILI TORRES' },
+        { desc: "ESTADIA DE VOLTA EM SAO PAULO", totalAmount: 358.20, cat: "Lazer", day: 4, installments: 4, sY: 2026, sM: 3, group: 'LILI TORRES' },
+        { desc: "ESTADIA EM CIDADE DO CABO", totalAmount: 1197.00, cat: "Lazer", day: 4, installments: 5, sY: 2026, sM: 3, group: 'LILI TORRES' },
+        { desc: "ESTADIA EM JOHANESBURGO", totalAmount: 1363.93, cat: "Lazer", day: 4, installments: 5, sY: 2026, sM: 3, group: 'LILI TORRES' },
+        { desc: "FACULDADE DA MARCELLY", totalAmount: 2026.80, cat: "Educação", day: 12, installments: 10, sY: 2025, sM: 12, group: 'MARCIA BRITO' },
+        { desc: "FILHÃO AUTOPEÇAS", totalAmount: 120.00, cat: "Transporte", day: 12, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
+        { desc: "GUARDA ROUPAS", totalAmount: 914.48, cat: "Moradia", day: 12, installments: 5, sY: 2026, sM: 2, group: 'MARCIA BRITO' },
+        { desc: "INGRESSO JOGO BAHIA", totalAmount: 428.68, cat: "Lazer", day: 7, installments: 2, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "KR AUTOPEÇAS", totalAmount: 291.00, cat: "Transporte", day: 12, installments: 7, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
+        { desc: "MALA DO ANDRÉ", totalAmount: 179.00, cat: "Lazer", day: 12, installments: 3, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
+        { desc: "MÃO DE OBRA DO DAVI", totalAmount: 372.82, cat: "Moradia", day: 12, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
+        { desc: "PASSAGENS AÉREAS (IAGO)", totalAmount: 1394.00, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "PASSAGENS AÉREAS JOBURG X CAPE TOWN", totalAmount: 1560.00, cat: "Lazer", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
+        { desc: "PASSAGENS AÉREAS SP X JOBURG", totalAmount: 4038.96, cat: "Lazer", day: 4, installments: 8, sY: 2026, sM: 1, group: 'LILI TORRES' },
+        { desc: "PASSAGENS DE ONIBUS RIO x SP", totalAmount: 438.00, cat: "Transporte", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
+        { desc: "PASSAGENS PARA SALVADOR", totalAmount: 1301.64, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "PASSEIO DE SAFARI", totalAmount: 5716.00, cat: "Lazer", day: 10, installments: 10, sY: 2026, sM: 3, group: 'JADY' },
+        { desc: "PRESENTE DO ANDRÉ (LILI)", totalAmount: 359.91, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 9, group: 'LILI TORRES' },
+        { desc: "PRIMEIRO CARRO ALUGADO", totalAmount: 379.02, cat: "Transporte", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "REFORMA DO SOFÁ DE CAXIAS", totalAmount: 575.00, cat: "Moradia", day: 12, installments: 5, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
+        { desc: "REMÉDIO PARA CUPIM", totalAmount: 37.00, cat: "Saúde", day: 28, installments: 1, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
+        { desc: "REMÉDIOS (MARCIA BRITO)", totalAmount: 246.09, cat: "Saúde", day: 28, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
+        { desc: "RENEGOCIAR CARREFOUR", totalAmount: 5000.00, cat: "Dívidas", day: 12, installments: 16, sY: 2025, sM: 12, group: 'MARCIA BRITO' },
+        { desc: "SEGUNDO CARRO ALUGADO", totalAmount: 471.42, cat: "Transporte", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "UBER", totalAmount: 12.58, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
     ];
 
 

@@ -1383,15 +1383,19 @@ const App: React.FC = () => {
                 addOrUpdateIagoExpense("CLAROFLEX MARCELLY", 44.90, "claroflex_marcelly", null);
                 addOrUpdateIagoExpense("ABASTECIMENTO 1", 275.00, "abastecimento_1", null);
                 addOrUpdateIagoExpense("ABASTECIMENTO 2", 150.00, "abastecimento_2", null);
-                addOrUpdateIagoExpense("UBER", 19.00, "uber_iago", null);
+                addOrUpdateIagoExpense("UBER", 12.58, "uber_iago", null);
             }
             if (iagoNewInst >= 1 && iagoNewInst <= 6) {
-                
                 const targetPassagensAmount = 216.94;
                 addOrUpdateIagoExpense("PASSAGENS PARA SALVADOR", targetPassagensAmount, "passagens_salvador", { current: iagoNewInst, total: 6 });
                 addOrUpdateIagoExpense("PRIMEIRO CARRO ALUGADO", 63.17, "primeiro_carro", { current: iagoNewInst, total: 6 });
                 addOrUpdateIagoExpense("SEGUNDO CARRO ALUGADO", 78.57, "segundo_carro", { current: iagoNewInst, total: 6 });
                 addOrUpdateIagoExpense("AIRBNB (HMT3Q9TBYB)", 190.74, "airbnb_hmt3q9tbyb", { current: iagoNewInst, total: 6 });
+                
+                // Added/Updated based on user request Sept 2026
+                addOrUpdateIagoExpense("AIRBNB HMJHTC29YF", 30.95, "airbnb_hmjhtc29yf", { current: iagoNewInst, total: 6 });
+                addOrUpdateIagoExpense("AIRBNB HM2YDD2J9T", 95.01, "airbnb_hm2ydd2j9t", { current: iagoNewInst, total: 6 });
+                addOrUpdateIagoExpense("EMPRÉSTIMO PARA VIAJAR", 416.66, "emprestimo_viajar", { current: iagoNewInst, total: 6 });
             }
             
             // Cleanup old variables and requested removals
@@ -1399,9 +1403,9 @@ const App: React.FC = () => {
             data.expenses = data.expenses.filter(e => {
                 const d = e.description.toUpperCase();
                 
-                return !(d.includes("ESTADIA EM SALVADOR")) && 
-                       !(d.includes("PRIMEIRA ESTADIA EM SALVADOR")) &&
-                       !(d.includes("SEGUNDA ESTADIA EM SALVADOR")) &&
+                return !(d.includes("ESTADIA EM SALVADOR") && !d.includes("AIRBNB")) && 
+                       !(d.includes("PRIMEIRA ESTADIA EM SALVADOR") && !d.includes("AIRBNB")) &&
+                       !(d.includes("SEGUNDA ESTADIA EM SALVADOR") && !d.includes("AIRBNB")) &&
                        !(d.includes("COMPRA (697+697)")) &&
                        !(d === "PASSAGENS AÉREAS" || d === "PASSAGENS AEREAS") &&
                        !(d.includes("GOL LINHAS")) &&
@@ -1690,9 +1694,171 @@ const App: React.FC = () => {
                     data.avulsosItems.push({ ...item });
                 }
             });
+
+            // Iago Cartão Nubank items for September 2026
+            const iagoOverridesSept2026 = [
+                { match: (d: string) => d.includes('UBER'), desc: 'UBER', amount: 12.58, cat: 'Transporte', day: 7, inst: null },
+                { match: (d: string) => d.includes('HMJHTC29YF') || (d.includes('AIRBNB') && d.includes('SALVADOR')), desc: 'AIRBNB SALVADOR 16-18 JUL (hmjhtc29yf)', amount: 30.95, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('HM2YDD2J9T') || (d.includes('AIRBNB') && d.includes('ARACAJU')), desc: 'AIRBNB ARACAJU 19-21 JUL (hm2ydd2j9t)', amount: 95.01, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('EMPRÉSTIMO PARA VIAJAR') || d.includes('EMPRESTIMO PARA VIAJAR'), desc: 'EMPRÉSTIMO PARA VIAJAR', amount: 416.66, cat: 'Dívidas', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('ABASTECIMENTO 1'), desc: 'ABASTECIMENTO 1', amount: 275.00, cat: 'Transporte', day: 7, inst: null },
+                { match: (d: string) => d.includes('ABASTECIMENTO 2'), desc: 'ABASTECIMENTO 2', amount: 150.00, cat: 'Transporte', day: 7, inst: null },
+                { match: (d: string) => d.includes('HMT3Q9TBYB'), desc: 'AIRBNB (HMT3Q9TBYB)', amount: 190.74, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('HMEPQPS338'), desc: 'AIRBNB MACEIÓ 17-19 JUL (hmepqps338)', amount: 63.33, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('HM5KAQJY4J'), desc: 'AIRBNB MACEIÓ 19-20 JUL (hm5kaqjy4j)', amount: 27.17, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('ACRÉSCIMO PASSAGEM') || d.includes('ACRESCIMO PASSAGEM'), desc: 'ACRÉSCIMO PASSAGEM AÉREA', amount: 120.00, cat: 'Lazer', day: 7, inst: { current: 2, total: 2 } },
+                { match: (d: string) => d === 'CLAROFLEX ANDRÉ' || d === 'CLAROFLEX ANDRE' || d.includes('CLAROFLEX ANDRÉ'), desc: 'CLAROFLEX ANDRÉ', amount: 59.90, cat: 'Moradia', day: 7, inst: null },
+                { match: (d: string) => d === 'CLAROFLEX MARCELLY' || d.includes('CLAROFLEX MARCELLY'), desc: 'CLAROFLEX MARCELLY', amount: 44.90, cat: 'Moradia', day: 7, inst: null },
+                { match: (d: string) => d.includes('COMPRAS GUANABARA') || d.includes('GUANABARA'), desc: 'COMPRAS GUANABARA', amount: 923.54, cat: 'Alimentação', day: 7, inst: null },
+                { match: (d: string) => d.includes('BAHIA') || d.includes('INGRESSO JOGO'), desc: 'INGRESSO JOGO BAHIA', amount: 214.34, cat: 'Lazer', day: 7, inst: { current: 2, total: 2 } },
+                { match: (d: string) => d.includes('PASSAGENS AÉREAS (IAGO)') || d.includes('PASSAGENS AEREAS (IAGO)'), desc: 'PASSAGENS AÉREAS (IAGO)', amount: 232.33, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('PASSAGENS PARA SALVADOR'), desc: 'PASSAGENS PARA SALVADOR', amount: 216.94, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('PRIMEIRO CARRO'), desc: 'PRIMEIRO CARRO ALUGADO', amount: 63.17, cat: 'Transporte', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('SEGUNDO CARRO'), desc: 'SEGUNDO CARRO ALUGADO', amount: 78.57, cat: 'Transporte', day: 7, inst: { current: 2, total: 6 } }
+            ];
+
+            iagoOverridesSept2026.forEach(item => {
+                const index = data.expenses.findIndex(e => item.match(e.description.toUpperCase()) && (e.group === 'IAGO (CARTÃO NUBANK)' || !e.group));
+                if (index >= 0) {
+                    data.expenses[index] = {
+                        ...data.expenses[index],
+                        description: item.desc,
+                        amount: item.amount,
+                        category: item.cat,
+                        dueDate: `2026-09-${item.day.toString().padStart(2, '0')}`,
+                        installments: item.inst ? item.inst : undefined,
+                        group: 'IAGO (CARTÃO NUBANK)'
+                    };
+                } else {
+                    data.expenses.push({
+                        id: `iago_${item.desc.replace(/[^A-Z0-9]/gi, '')}_sep26`,
+                        description: item.desc,
+                        amount: item.amount,
+                        category: item.cat,
+                        paid: false,
+                        dueDate: `2026-09-${item.day.toString().padStart(2, '0')}`,
+                        installments: item.inst ? item.inst : undefined,
+                        group: 'IAGO (CARTÃO NUBANK)'
+                    });
+                }
+            });
+
+            // Jady items for September 2026
+            const jadyOverridesSept2026 = [
+                { match: (d: string) => d.includes('SAFARI') || d.includes('PASSEIO'), desc: 'PASSEIO DE SAFARI (JADY)', amount: 571.60, cat: 'Lazer', day: 10, inst: { current: 7, total: 10 } },
+                { match: (d: string) => d.includes('MAQUIAGEM'), desc: 'COMPRA DE MAQUIAGEM (JADY)', amount: 116.00, cat: 'Outros', day: 10, inst: { current: 2, total: 4 } },
+                { match: (d: string) => d.includes('TÊNIS') || d.includes('TENIS'), desc: 'COMPRA DE TÊNIS (JADY)', amount: 309.99, cat: 'Outros', day: 10, inst: { current: 2, total: 4 } }
+            ];
+
+            jadyOverridesSept2026.forEach(item => {
+                const index = data.expenses.findIndex(e => item.match(e.description.toUpperCase()) && (e.group === 'JADY' || !e.group));
+                if (index >= 0) {
+                    data.expenses[index] = {
+                        ...data.expenses[index],
+                        description: item.desc,
+                        amount: item.amount,
+                        category: item.cat,
+                        dueDate: `2026-09-${item.day.toString().padStart(2, '0')}`,
+                        installments: item.inst,
+                        group: 'JADY'
+                    };
+                } else {
+                    data.expenses.push({
+                        id: `jady_${item.desc.replace(/[^A-Z0-9]/gi, '')}_sep26`,
+                        description: item.desc,
+                        amount: item.amount,
+                        category: item.cat,
+                        paid: false,
+                        dueDate: `2026-09-${item.day.toString().padStart(2, '0')}`,
+                        installments: item.inst,
+                        group: 'JADY'
+                    });
+                }
+            });
         }
 
-        // Sort expenses and avulsosItems alphabetically by description (QQ Divida dentro de cada categoria)
+        // SYSTEM RULES: Apply these regardless of whether the user has modified data
+        
+        // 1. Update Andre's Salary for Sept 2026 onwards
+        if ((year === 2026 && month >= 9) || year > 2026) {
+            data.incomes = data.incomes.map(i => {
+                const desc = i.description.toUpperCase();
+                const isAndreSalary = desc === "SALARIO ANDRE" || 
+                                    desc === "SALÁRIO ANDRÉ" || 
+                                    desc === "SALÁRIO DO ANDRÉ" || 
+                                    desc === "SALARIO DO ANDRE" || 
+                                    desc.includes("SALÁRIO ANDRÉ") || 
+                                    desc.includes("SALARIO ANDRE") ||
+                                    i.amount === 3100 || 
+                                    i.amount === 3100.00;
+                
+                if (isAndreSalary) {
+                    return { ...i, amount: 3219.07 };
+                }
+                return i;
+            });
+        }
+
+        // 2. December 2026 special rules (13th salary)
+        if (year === 2026 && month === 12) {
+             // Ensure normal salaries are correct for December
+             const hasSalAndre = data.incomes.some(i => i.id === "inc_a_2026_12" || i.description.toUpperCase().includes("SALÁRIO ANDRÉ") || i.description.toUpperCase().includes("SALARIO ANDRE"));
+             const hasSalMarcelly = data.incomes.some(i => i.id === "inc_m_2026_12" || i.description.toUpperCase().includes("SALÁRIO MARCELLY") || i.description.toUpperCase().includes("SALARIO MARCELLY"));
+
+             if (!hasSalAndre) {
+                 data.incomes.push({
+                     id: "inc_a_2026_12",
+                     description: "SALÁRIO ANDRÉ",
+                     amount: 3219.07,
+                     paid: false,
+                     date: "2026-12-01",
+                     dueDate: "2026-12-01",
+                     category: "Salário"
+                 });
+             }
+
+             if (!hasSalMarcelly) {
+                 data.incomes.push({
+                     id: "inc_m_2026_12",
+                     description: "SALÁRIO MARCELLY",
+                     amount: 3436.22,
+                     paid: false,
+                     date: "2026-12-27",
+                     dueDate: "2026-12-27",
+                     category: "Salário"
+                 });
+             }
+
+             // Remove any existing 13th salary entries to avoid duplication
+             data.incomes = data.incomes.filter(i => {
+                 const desc = i.description.toUpperCase();
+                 return !desc.includes("13º") && !desc.includes("13O") && !desc.includes("DÉCIMO TERCEIRO") && !desc.includes("DECIMO TERCEIRO");
+             });
+
+             // Marcelly: Full salary
+             data.incomes.push({
+                 id: "inc_13_m_2026",
+                 description: "13º SALÁRIO - MARCELLY",
+                 amount: 3436.22,
+                 paid: false,
+                 date: "2026-12-20",
+                 dueDate: "2026-12-20",
+                 category: "13º Salário"
+             });
+
+             // Andre: 7/12
+             data.incomes.push({
+                 id: "inc_13_a_2026",
+                 description: "13º SALÁRIO - ANDRÉ (7/12)",
+                 amount: 1877.79,
+                 paid: false,
+                 date: "2026-12-20",
+                 dueDate: "2026-12-20",
+                 category: "13º Salário"
+             });
+        }
+
+        // Final sort to ensure all programmatically added items are alphabetically ordered
         data.expenses = [...data.expenses].sort((a, b) => 
             a.description.localeCompare(b.description, 'pt-BR', { sensitivity: 'base' })
         );
@@ -2440,7 +2606,7 @@ const App: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-1 gap-3">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
                                                 {groupedDebts.map(group => (
                                                     <button key={group.name} onClick={() => handleFilter('group', group.name)} className="bg-white rounded-2xl lg:rounded-3xl p-2.5 lg:p-3.5 border border-slate-50 shadow-sm flex items-center justify-between group hover:shadow-md transition-all w-full text-left">
                                                         <div className="flex items-center gap-2.5 lg:gap-3 overflow-hidden">
