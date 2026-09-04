@@ -931,7 +931,7 @@ const App: React.FC = () => {
                     data.incomes = data.incomes.map(i => {
                         const desc = i.description.toUpperCase();
                         if (desc === "SALARIO ANDRE" || desc === "SALÁRIO ANDRÉ" || desc === "SALÁRIO DO ANDRÉ" || desc === "SALARIO DO ANDRE" || desc.includes("SALÁRIO ANDRÉ") || desc.includes("SALARIO ANDRE")) {
-                            return { ...i, amount: ((year === 2026 && month >= 9) || year > 2026) ? 3100.00 : 3334.00 };
+                            return { ...i, amount: ((year === 2026 && month >= 9) || year > 2026) ? 3219.07 : 3334.00 };
                         }
                         return i;
                     });
@@ -1279,6 +1279,68 @@ const App: React.FC = () => {
             if (month === 6) {
                 data.expenses = data.expenses.map(markAsPaidLogic);
                 data.avulsosItems = data.avulsosItems.map(markAsPaidLogic);
+            }
+
+            // 8. Incomes for December 2026 (Salaries + 13th Salary)
+            if (year === 2026 && month === 12) {
+                // Ensure normal salaries are correct for December
+                const hasSalAndre = data.incomes.some(i => i.id === "inc_a_2026_12" || i.description.toUpperCase().includes("SALÁRIO ANDRÉ") || i.description.toUpperCase().includes("SALARIO ANDRE"));
+                const hasSalMarcelly = data.incomes.some(i => i.id === "inc_m_2026_12" || i.description.toUpperCase().includes("SALÁRIO MARCELLY") || i.description.toUpperCase().includes("SALARIO MARCELLY"));
+
+                if (!hasSalAndre) {
+                    data.incomes.push({
+                        id: "inc_a_2026_12",
+                        description: "SALÁRIO ANDRÉ (Recebido: 01/12)",
+                        amount: 3219.07,
+                        paid: true,
+                        date: "2026-12-01",
+                        dueDate: "2026-12-01",
+                        category: "Salário"
+                    });
+                } else {
+                    data.incomes = data.incomes.map(i => (i.description.toUpperCase().includes("SALÁRIO ANDRÉ") || i.description.toUpperCase().includes("SALARIO ANDRE")) ? { ...i, amount: 3219.07 } : i);
+                }
+
+                if (!hasSalMarcelly) {
+                    data.incomes.push({
+                        id: "inc_m_2026_12",
+                        description: "SALÁRIO MARCELLY (Recebido: 27/11)",
+                        amount: 3436.22,
+                        paid: true,
+                        date: "2026-11-27",
+                        dueDate: "2026-11-27",
+                        category: "Salário"
+                    });
+                }
+
+                // Remove any existing 13th salary entries to avoid duplication
+                data.incomes = data.incomes.filter(i => {
+                    const desc = i.description.toUpperCase();
+                    return !desc.includes("13º") && !desc.includes("13O") && !desc.includes("DÉCIMO TERCEIRO") && !desc.includes("DECIMO TERCEIRO");
+                });
+
+                // Marcelly: Full salary (received normal salaries)
+                data.incomes.push({
+                    id: "inc_13_m_2026",
+                    description: "13º SALÁRIO - MARCELLY",
+                    amount: 3436.22,
+                    paid: false,
+                    date: "2026-12-20",
+                    dueDate: "2026-12-20",
+                    category: "13º Salário"
+                });
+
+                // Andre: 7/12 (started in June: Jun, Jul, Aug, Sep, Oct, Nov, Dec)
+                // (3219.07 / 12) * 7 = 1877.79
+                data.incomes.push({
+                    id: "inc_13_a_2026",
+                    description: "13º SALÁRIO - ANDRÉ (7/12)",
+                    amount: 1877.79,
+                    paid: false,
+                    date: "2026-12-20",
+                    dueDate: "2026-12-20",
+                    category: "13º Salário"
+                });
             }
         }
 

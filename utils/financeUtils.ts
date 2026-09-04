@@ -80,7 +80,7 @@ export const generateMonthData = (year: number, month: number): MonthData => {
     // Base Incomes
     const newIncomes: Transaction[] = [
         { id: `inc_m_${year}_${month}`, description: marcellySalaryDesc, amount: 3436.22, paid: (year === 2026 && month === 9) ? true : (isJan2026 || isApr2026OrMay2026), date: marcellySalaryDate, dueDate: marcellySalaryDate, category: 'Salário' },
-        { id: `inc_a_${year}_${month}`, description: andreSalaryDesc, amount: (year === 2026 && month === 9) ? 3219.07 : (((year === 2026 && month >= 9) || year > 2026) ? 3100.00 : ((year === 2026 && month >= 7) ? 3334.00 : 3436.22)), paid: (year === 2026 && month === 9) ? true : (isJan2026 || isApr2026OrMay2026), date: andreSalaryDate, dueDate: andreSalaryDate, category: 'Salário' },
+        { id: `inc_a_${year}_${month}`, description: andreSalaryDesc, amount: (year === 2026 && month === 9) ? 3219.07 : (((year === 2026 && month >= 9) || year > 2026) ? 3219.07 : ((year === 2026 && month >= 7) ? 3334.00 : 3436.22)), paid: (year === 2026 && month === 9) ? true : (isJan2026 || isApr2026OrMay2026), date: andreSalaryDate, dueDate: andreSalaryDate, category: 'Salário' },
         { id: `inc_mum_m_${year}_${month}`, description: 'MUMBUCA MARCELLY', amount: 598.00, paid: isJan2026, date: mumbucaDate, category: 'Mumbuca' }
     ];
 

@@ -23,7 +23,8 @@ interface TransactionListProps {
 const getCategoryIcon = (category: string) => {
     const props = { size: 18, strokeWidth: 3 }; // Aumentado strokeWidth
     switch (category) {
-        case 'Salário': return <Banknote {...props} />;
+        case 'Salário': 
+        case '13º Salário': return <Banknote {...props} />;
         case 'Mumbuca': return <CreditCard {...props} />;
         case 'Moradia': return <Home {...props} />;
         case 'Alimentação': return <ShoppingCart {...props} />;
@@ -42,7 +43,8 @@ const getCategoryIcon = (category: string) => {
 
 const getCategoryColor = (category: string) => {
     switch (category) {
-        case 'Salário': return 'bg-emerald-100/40 text-emerald-700 border-emerald-100';
+        case 'Salário': 
+        case '13º Salário': return 'bg-emerald-100/40 text-emerald-700 border-emerald-100';
         case 'Mumbuca': return 'bg-rose-100/40 text-rose-700 border-rose-100';
         case 'Moradia': return 'bg-emerald-50 text-emerald-700 border-emerald-100'; // Cor levemente verde
         case 'Alimentação': return 'bg-orange-100/40 text-orange-700 border-orange-100';
