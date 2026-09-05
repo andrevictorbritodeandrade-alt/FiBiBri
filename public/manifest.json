@@ -1,7 +1,7 @@
 {
-  "name": "Finanças AI",
-  "short_name": "Finanças AI",
-  "description": "Controle financeiro inteligente.",
+  "name": "FINANÇAS BISPO DE ANDRADE",
+  "short_name": "Bispo de Andrade",
+  "description": "Sistema de gestão e planejamento financeiro familiar Bispo de Andrade.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

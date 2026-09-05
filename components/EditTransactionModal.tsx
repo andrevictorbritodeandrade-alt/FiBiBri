@@ -29,13 +29,16 @@ const getCategoryIcon = (category: string) => {
         case 'Abastecimento': return <Fuel {...props} />;
         case 'Doação': return <Gift {...props} />;
         case 'Renda Extra': return <Coins {...props} />;
+        case 'Jady':
+        case 'Claudio Silva':
+        case 'Iago': return <CreditCard {...props} />;
         default: return <MoreHorizontal {...props} />;
     }
 };
 
 const CATEGORIES = [
     'Salário', 'Mumbuca', 'Moradia', 'Alimentação', 'Transporte', 'Saúde', 
-    'Educação', 'Lazer', 'Dívidas', 'Investimento', 'Abastecimento', 
+    'Educação', 'Lazer', 'Dívidas', 'Jady', 'Claudio Silva', 'Iago', 'Investimento', 'Abastecimento', 
     'Doação', 'Renda Extra', 'Outros'
 ];
 

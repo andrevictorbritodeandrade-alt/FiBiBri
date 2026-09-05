@@ -24,15 +24,11 @@ interface Conta {
 
 const TARGET_FIXED_DEBTS = [
   { key: 'aluguel', nome: 'Aluguel', defaultVal: 1300.00, match: (d: string) => d.includes('ALUGUEL') },
-  { key: 'inter_andre', nome: 'Cartão do Inter do André', defaultVal: 386.00, match: (d: string) => d.includes('INTER') && (d.includes('ANDRÉ') || d.includes('ANDRE')) },
   { key: 'itau_marcelly', nome: 'Cartão do Itaú da Marcelly', defaultVal: 198.34, match: (d: string) => (d.includes('ITAÚ') || d.includes('ITAU')) && d.includes('MARCELLY') },
   { key: 'itau_andre', nome: 'Cartão do Itaú do André', defaultVal: 116.00, match: (d: string) => (d.includes('ITAÚ') || d.includes('ITAU')) && (d.includes('ANDRÉ') || d.includes('ANDRE')) && !d.includes('MARCELLY') },
   { key: 'internet', nome: 'Internet da Casa', defaultVal: 125.00, match: (d: string) => d.includes('INTERNET DA CASA') || d.includes('INTERNET') && d.includes('CASA') },
   { key: 'psicologa', nome: 'Psicóloga da Marcelly', defaultVal: 280.00, match: (d: string) => d.includes('PSICÓLOGA') || d.includes('PSICOLOGA') },
   { key: 'remedios_tdah', nome: 'Remédio do André (TEA/TDAH)', defaultVal: 250.00, match: (d: string) => d.includes('TEA') || d.includes('TDAH') },
-  { key: 'poviztra', nome: 'Caneta Poviztra (Controle Metabólico)', defaultVal: 490.00, match: (d: string) => d.includes('POVIZTRA') },
-  { key: 'vitamina_d', nome: 'Vitamina D Injetável (Controle Metabólico)', defaultVal: 152.00, match: (d: string) => d.includes('VITAMINA D') },
-  { key: 'vitamina_b', nome: 'Vitamina B (Controle Metabólico)', defaultVal: 46.00, match: (d: string) => d.includes('VITAMINA B') },
   { key: 'seguro', nome: 'Seguro do Carro', defaultVal: 143.00, match: (d: string) => d.includes('SEGURO DO CARRO') || d.includes('SEGURO') && d.includes('CARRO') },
   { key: 'appai_andre', nome: 'APPAI do André', defaultVal: 129.50, match: (d: string) => d.includes('APPAI') && (d.includes('ANDRÉ') || d.includes('ANDRE')) },
   { key: 'appai_marcelly', nome: 'APPAI da Marcelly', defaultVal: 110.00, match: (d: string) => d.includes('APPAI') && d.includes('MARCELLY') },
@@ -61,7 +57,7 @@ interface ThirdPartyDebt {
   installments: number;
   startYear: number;
   startMonth: number;
-  card: 'MARCIA BRITO' | 'MARCIA BISPO' | 'LILI TORRES' | 'REBECCA BRITO' | 'JADY' | 'IAGO (NUBANK)' | 'CLAUDIO SILVA';
+  card: 'MARCIA BRITO' | 'MARCIA BISPO' | 'LILI TORRES' | 'REBECCA BRITO' | 'JADY' | 'IAGO (NUBANK)';
   isPausedInJune?: boolean;
   isVariableOnlyInAugust?: boolean;
   customAmounts?: number[];
@@ -87,9 +83,6 @@ const DEBT_ITEMS_CONFIG: ThirdPartyDebt[] = [
   { name: 'Empréstimo para pagar as contas de Abril (Marcia Bispo)', amount: 250.00, totalAmount: 1000.00, installments: 4, startYear: 2026, startMonth: 10, card: 'MARCIA BISPO' },
   { name: 'Empréstimo para pagar as contas de Setembro (Marcia Bispo)', amount: 300.00, totalAmount: 1500.00, installments: 5, startYear: 2026, startMonth: 10, card: 'MARCIA BISPO' },
 
-  // CLAUDIO SILVA
-  { name: 'Empréstimo para pagar as contas de Setembro (Claudio Silva)', amount: 150.00, totalAmount: 500.00, installments: 3, startYear: 2026, startMonth: 10, card: 'CLAUDIO SILVA', customAmounts: [150.00, 150.00, 200.00] },
-
   // LILI TORRES
   { name: 'Empréstimo com Lili', amount: 800.00, totalAmount: 4000.00, installments: 5, startYear: 2026, startMonth: 7, card: 'LILI TORRES' },
   { name: 'Compra na Shein (Lili)', amount: 94.07, totalAmount: 282.21, installments: 3, startYear: 2026, startMonth: 8, card: 'LILI TORRES' },
@@ -105,12 +98,16 @@ const DEBT_ITEMS_CONFIG: ThirdPartyDebt[] = [
   { name: 'Cidadania Portuguesa', amount: 140.00, totalAmount: 5180.00, installments: 37, startYear: 2024, startMonth: 11, card: 'REBECCA BRITO' },
 
   // JADY
+  { name: 'Empréstimo para Viagem de Salvador', amount: 395.26, totalAmount: 1185.78, installments: 3, startYear: 2026, startMonth: 8, card: 'JADY' },
   { name: 'Compra de Maquiagem', amount: 116.00, totalAmount: 232.00, installments: 2, startYear: 2026, startMonth: 6, card: 'JADY' },
   { name: 'Compra de Tênis', amount: 309.99, totalAmount: 619.98, installments: 2, startYear: 2026, startMonth: 6, card: 'JADY' },
   { name: 'Passeio de Safari', amount: 571.60, totalAmount: 3429.60, installments: 6, startYear: 2026, startMonth: 3, card: 'JADY' },
 
   // IAGO (NUBANK)
-  { name: 'Emprestimo no cartao', amount: 416.00, totalAmount: 2496.00, installments: 6, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)' },
+  { name: 'Empréstimo para Viajar', amount: 416.66, totalAmount: 2499.96, installments: 6, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)' },
+  { name: 'Uber', amount: 12.58, totalAmount: 12.58, installments: 1, startYear: 2026, startMonth: 9, card: 'IAGO (NUBANK)' },
+  { name: 'Airbnb Salvador 16-18 Jul (hmjhtc29yf)', amount: 30.95, totalAmount: 185.70, installments: 6, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)' },
+  { name: 'Airbnb Aracaju 19-21 Jul (hm2ydd2j9t)', amount: 95.01, totalAmount: 570.06, installments: 6, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)' },
   { name: '02 Jul Gol Linhas', amount: 232.33, totalAmount: 1555.85, installments: 6, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)' },
   { name: 'Auto Posto', amount: 300.84, totalAmount: 300.84, installments: 1, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)', isVariableOnlyInAugust: true },
   { name: 'Jul Airbnb', amount: 190.75, totalAmount: 190.75, installments: 1, startYear: 2026, startMonth: 8, card: 'IAGO (NUBANK)', isVariableOnlyInAugust: true },
@@ -150,6 +147,16 @@ const getInstallmentForMonth = (item: ThirdPartyDebt, year: number, month: numbe
     }
     if (year > 2026 || (year === 2026 && month > 6)) {
       startM = item.startMonth + 1; // Shifts July to be parcel 3 instead of 4
+    }
+  }
+
+  // Account for the October 2026 pause for Lili loan (800.00)
+  if (item.card === 'LILI TORRES' && item.name === 'Empréstimo com Lili') {
+    if (year === 2026 && month === 10) {
+      return null; // Paused / Congelado
+    }
+    if (year > 2026 || (year === 2026 && month > 10)) {
+      startM = item.startMonth + 1; // Shifts November to be parcel 4 instead of 4 in Oct
     }
   }
 
@@ -1151,7 +1158,6 @@ Seja direto, encorajador, prático e utilize formatação em markdown limpa e bo
             const cardsList = [
               { id: 'MARCIA BRITO', name: 'Cartão Márcia Brito (Você usa)', color: 'border-amber-300', bgColor: 'bg-amber-50', textColor: 'text-amber-800', items: [] as typeof activeDebtsForMonth },
               { id: 'MARCIA BISPO', name: 'Cartão Márcia Bispo', color: 'border-purple-300', bgColor: 'bg-purple-50', textColor: 'text-purple-800', items: [] as typeof activeDebtsForMonth },
-              { id: 'CLAUDIO SILVA', name: 'Claudio Silva', color: 'border-emerald-300', bgColor: 'bg-emerald-50', textColor: 'text-emerald-800', items: [] as typeof activeDebtsForMonth },
               { id: 'LILI TORRES', name: 'Cartão Lili Torres', color: 'border-teal-300', bgColor: 'bg-teal-50', textColor: 'text-teal-800', items: [] as typeof activeDebtsForMonth },
               { id: 'REBECCA BRITO', name: 'Cartão Rebecca Brito (Cidadania)', color: 'border-blue-300', bgColor: 'bg-blue-50', textColor: 'text-blue-800', items: [] as typeof activeDebtsForMonth },
               { id: 'JADY', name: 'Cartão Jady', color: 'border-rose-300', bgColor: 'bg-rose-50', textColor: 'text-rose-800', items: [] as typeof activeDebtsForMonth },

@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Cloud, CloudOff, RefreshCw, Home, List, Smartphone } from 'lucide-react';
 import { BankAccount } from '../types';
 import { formatCurrency } from '../utils/financeUtils';
+import BankLogo from './BankLogo';
 
 interface SidebarProps {
     isOpen: boolean;
@@ -40,9 +41,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, accounts, syncStatus
                 onClick={onClose}
             ></div>
             <div className={`fixed top-0 left-0 w-[85%] max-w-xs h-full bg-white z-[51] shadow-2xl transform transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                <div className="p-6 border-b border-dashed border-gray-100 flex justify-between items-center">
-                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Finanças<span className="text-teal-600">.AI</span></h2>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 text-gray-500">
+                <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-slate-50/50">
+                    <BankLogo size="sm" layout="horizontal" theme="light" />
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200 text-gray-500 transition-colors">
                         <X size={20} strokeWidth={3} />
                     </button>
                 </div>

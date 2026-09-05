@@ -27,6 +27,8 @@ const getCategoryIcon = (category: string) => {
         case 'Abastecimento': return <Fuel {...props} />;
         case 'Doação': return <Gift {...props} />;
         case 'Renda Extra': return <Coins {...props} />;
+        case 'Jady':
+        case 'Iago': return <CreditCard {...props} />;
         default: return <MoreHorizontal {...props} />;
     }
 };
@@ -41,6 +43,8 @@ const getCategoryColor = (category: string) => {
         case 'Lazer': return 'bg-teal-500 text-teal-100';
         case 'Dívidas': return 'bg-red-600 text-red-100';
         case 'Investimento': return 'bg-emerald-500 text-emerald-100';
+        case 'Jady': return 'bg-fuchsia-500 text-fuchsia-100';
+        case 'Iago': return 'bg-sky-500 text-sky-100';
         default: return 'bg-slate-500 text-slate-100';
     }
 };

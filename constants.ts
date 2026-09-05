@@ -28,12 +28,19 @@ export const CATEGORY_ICONS: Record<string, string> = {
     'Transporte': '🚗', 
     'Saúde': '💊', 
     'Educação': '📚', 
-    'Lazer': '🎉', 
-    'Dívidas': '💸', 
+    'Lazer': '🎉',
+    'Estadias': '🏨',
+    'Viagens': '✈️', 
+    'Roupas': '👕',
+    'Dívidas': '💸',
+    'Empréstimos': '🏦', 
     'Investimento': '📈', 
     'Abastecimento': '⛽', 
     'Doação': '🎁', 
     'Renda Extra': '💵',
+    'Jady': '💳',
+    'Claudio Silva': '🤝',
+    'Iago': '💳',
     'Outros': '📝'
 };
 

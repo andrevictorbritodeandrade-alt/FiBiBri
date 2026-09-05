@@ -18,7 +18,7 @@ import { INITIAL_SEPTEMBER_AVULSO_TRANSACTIONS } from './data/avulsoData';
 import { db, auth, isConfigured, onAuthStateChanged, signInAnonymously } from './services/firebaseConfig';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { FAMILY_ID } from './constants';
-import { Target, Plus, ShoppingBag, User, Users, ArrowRight, Plane, Wallet, PiggyBank, Home as HomeIcon, Palmtree, Heart, Car, GraduationCap, MoreHorizontal, TrendingUp, ShoppingCart, FileWarning } from 'lucide-react';
+import { Target, Plus, ShoppingBag, User, Users, ArrowRight, Plane, Wallet, PiggyBank, Home as HomeIcon, Palmtree, Heart, Car, GraduationCap, MoreHorizontal, TrendingUp, ShoppingCart, FileWarning, CreditCard, Shirt, Landmark } from 'lucide-react';
 import { formatCurrency } from './utils/financeUtils';
 
 enum OperationType {
@@ -151,94 +151,7 @@ const App: React.FC = () => {
     };
 
     // Santander balance based on User Calculation (May 2026 Cycle)
-    useEffect(() => {
-        if (!monthData) return;
-        
-        let newReserves = { ...bankReserves };
-
-        if (currentYear === 2026 && currentMonth === 5) {
-            // Updated May 2026 reserves logic: User reports 22.28 in Santander.
-            // Sofisa matches exactly what was moved in April (4351.00).
-            newReserves = {
-                santander: 22.28,
-                inter: 0,
-                sofisa: 4351.00
-            };
-        } else if (currentYear === 2026 && currentMonth === 6) {
-            // June 2026 reserves: Default to R$ 1422.40 in Santander (after paying Iago R$ 1819.22 from R$ 3241.62), R$ 307.98 in Banco Inter (poupança viagem) and R$ 0.00 in Sofisa
-            if (monthData.bankReserves && 
-                monthData.bankReserves.santander !== 1730.00 && 
-                monthData.bankReserves.santander !== 1641.62 && 
-                monthData.bankReserves.santander !== 3241.62 && 
-                monthData.bankReserves.santander !== 1422.40 && 
-                monthData.bankReserves.inter !== 0 && 
-                monthData.bankReserves.inter !== 248.31 &&
-                monthData.bankReserves.inter !== 307.98 &&
-                monthData.bankReserves.sofisa !== 4351.00 &&
-                monthData.bankReserves.sofisa !== 0.00) return; // Prevent overwriting customized values or custom updates
-            newReserves = {
-                santander: 1422.40,
-                inter: 307.98,
-                sofisa: 0.00
-            };
-        } else if (currentYear === 2026 && currentMonth >= 9) {
-            // R$ 100 guardado no Sofisa como parte das receitas
-            if (monthData.bankReserves && monthData.bankReserves.inter === 0 && monthData.bankReserves.sofisa === 100.00) {
-                return; // already initialized
-            } else {
-                newReserves = {
-                    santander: monthData.bankReserves?.santander || 0.00,
-                    inter: 0.00,
-                    sofisa: monthData.bankReserves?.sofisa && monthData.bankReserves.sofisa > 0 ? monthData.bankReserves.sofisa : 100.00
-                };
-            }
-        } else if (currentYear === 2026 && currentMonth > 6) {
-            // For future months (e.g. July 2026 and onwards): default Inter to 307.98 (poupança viagem) and Sofisa to 0.00 by default unless authorized
-            if (monthData.bankReserves && 
-                (monthData.bankReserves.inter === 248.31 || monthData.bankReserves.inter === 307.98) && 
-                monthData.bankReserves.sofisa === 0.00) {
-                if (monthData.bankReserves.inter === 248.31) {
-                    newReserves = {
-                        ...monthData.bankReserves,
-                        inter: 307.98
-                    };
-                } else {
-                    return; // already initialized, keep whatever Santander balance exists or has been edited
-                }
-            } else {
-                newReserves = {
-                    santander: monthData.bankReserves?.santander || 0.00,
-                    inter: 307.98,
-                    sofisa: 0.00
-                };
-            }
-        } else {
-            // Fallback: This is a complex derivation based on initial May salaries.
-            // We usually only want to auto-derive if NO bankReserves exist yet.
-            if (monthData.bankReserves) return; 
-
-            const initialRevenue = 7643.53;
-            const sofisaTransfer = 4351.00;
-            const totalPaidExpenses = monthData.expenses.filter(e => e.paid && !e.skipped).reduce((sum, e) => sum + e.amount, 0);
-            const totalPaidAvulsos = monthData.avulsosItems.filter(e => e.paid && !e.skipped).reduce((sum, e) => sum + e.amount, 0);
-            const currentSantander = initialRevenue - sofisaTransfer - totalPaidExpenses - totalPaidAvulsos;
-            
-            newReserves = {
-                santander: Math.max(0, Math.round(currentSantander * 100) / 100),
-                inter: 0,
-                sofisa: sofisaTransfer
-            };
-        }
-
-        // Only update if different and we are NOT in an infinite loop
-        if (JSON.stringify(newReserves) !== JSON.stringify(monthData.bankReserves)) {
-             // We use a small delay to avoid fighting with other effects
-             const timeout = setTimeout(() => {
-                saveData({ ...monthData, bankReserves: newReserves }, currentYear, currentMonth);
-             }, 100);
-             return () => clearTimeout(timeout);
-        }
-    }, [monthData, currentYear, currentMonth]);
+    // Managed centrally in ensureSystemIntegrity and handleTogglePaid
 
     // User request: Avulsos are now baked into defaults in financeUtils.ts
 
@@ -270,162 +183,6 @@ const App: React.FC = () => {
             saveData(newData, currentYear, currentMonth);
         }
     }, [monthData]);
-
-    // Ensure all Marcia Brito items are marked as paid in September 2026 as requested
-    useEffect(() => {
-        if (!monthData || currentYear !== 2026 || currentMonth !== 9) return;
-        const hasUnpaidMarciaBrito = monthData.expenses.some(e => {
-            const desc = (e.description || '').toUpperCase();
-            const isMarciaBrito = e.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && e.group !== 'MARCIA BISPO');
-            return isMarciaBrito && !e.paid;
-        }) || monthData.avulsosItems.some(a => {
-            const desc = (a.description || '').toUpperCase();
-            const isMarciaBrito = a.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && a.group !== 'MARCIA BISPO');
-            return isMarciaBrito && !a.paid;
-        });
-
-        if (hasUnpaidMarciaBrito) {
-            const updatedExpenses = monthData.expenses.map(e => {
-                const desc = (e.description || '').toUpperCase();
-                const isMarciaBrito = e.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && e.group !== 'MARCIA BISPO');
-                if (isMarciaBrito) {
-                    return { ...e, paid: true, paidAt: e.paidAt || '2026-09-02T12:00:00Z', userModifiedPaid: true };
-                }
-                return e;
-            });
-            const updatedAvulsos = monthData.avulsosItems.map(a => {
-                const desc = (a.description || '').toUpperCase();
-                const isMarciaBrito = a.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && a.group !== 'MARCIA BISPO');
-                if (isMarciaBrito) {
-                    return { ...a, paid: true, paidAt: a.paidAt || '2026-09-02T12:00:00Z', userModifiedPaid: true };
-                }
-                return a;
-            });
-
-            const updated = {
-                ...monthData,
-                expenses: updatedExpenses,
-                avulsosItems: updatedAvulsos,
-                updatedAt: Date.now()
-            };
-            saveData(updated, currentYear, currentMonth);
-        }
-    }, [monthData, currentYear, currentMonth]);
-
-    // Ensure PASSAGENS PARA SALVADOR is removed from Iago in Nov 2026, Dec 2026, and Jan 2027 to avoid duplication with PASSAGENS AÉREAS (IAGO)
-    useEffect(() => {
-        if (!monthData) return;
-        const isDuplicatedMonth = (currentYear === 2026 && (currentMonth === 11 || currentMonth === 12)) || (currentYear === 2027 && currentMonth === 1);
-        if (!isDuplicatedMonth) return;
-
-        const hasPassagensSalvador = monthData.expenses.some(e => {
-            const desc = (e.description || '').toUpperCase();
-            return desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (e.id && e.id.includes("passagens_salvador"));
-        }) || monthData.avulsosItems.some(a => {
-            const desc = (a.description || '').toUpperCase();
-            return desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (a.id && a.id.includes("passagens_salvador"));
-        });
-
-        if (hasPassagensSalvador) {
-            const updatedExpenses = monthData.expenses.filter(e => {
-                const desc = (e.description || '').toUpperCase();
-                return !(desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (e.id && e.id.includes("passagens_salvador")));
-            });
-            const updatedAvulsos = monthData.avulsosItems.filter(a => {
-                const desc = (a.description || '').toUpperCase();
-                return !(desc.includes("PASSAGENS PARA SALVADOR") || desc.includes("PASSAGENS SALVADOR") || (a.id && a.id.includes("passagens_salvador")));
-            });
-            const updated = {
-                ...monthData,
-                expenses: updatedExpenses,
-                avulsosItems: updatedAvulsos,
-                updatedAt: Date.now()
-            };
-            saveData(updated, currentYear, currentMonth);
-        }
-    }, [monthData, currentYear, currentMonth]);
-
-    // Ensure loan normalization: Rename old Marcia Bispo loan, add new Marcia Bispo September loan, add Claudio Silva September loan
-    useEffect(() => {
-        if (!monthData) return;
-        let needsUpdate = false;
-        let updatedExpenses = [...monthData.expenses];
-
-        // 1. Rename any old Marcia Bispo loan name
-        updatedExpenses = updatedExpenses.map(e => {
-            const desc = (e.description || '').toUpperCase();
-            if (desc.includes("NOVO EMPRÉSTIMO COM MARCIA BISPO") || desc.includes("NOVO EMPRESTIMO COM MARCIA BISPO") || desc.includes("NOVO EMPRÉSTIMO (OUT") || desc.includes("NOVO EMPRESTIMO (OUT")) {
-                needsUpdate = true;
-                return {
-                    ...e,
-                    description: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE ABRIL (MARCIA BISPO)",
-                    group: "MARCIA BISPO"
-                };
-            }
-            return e;
-        });
-
-        // 2. Marcia Bispo September loan: 1500 in 5 installments of 300 from Oct 2026 to Feb 2027
-        const mbStartYear = 2026;
-        const mbStartMonth = 10;
-        const mbDiff = (currentYear - mbStartYear) * 12 + (currentMonth - mbStartMonth);
-        if (mbDiff >= 0 && mbDiff < 5) {
-            const currentInst = mbDiff + 1;
-            const hasMBSeptemberLoan = updatedExpenses.some(e => {
-                const d = (e.description || '').toUpperCase();
-                return (d.includes('SETEMBRO') && d.includes('MARCIA BISPO') && (d.includes('EMPRÉSTIMO') || d.includes('EMPRESTIMO')));
-            });
-            if (!hasMBSeptemberLoan) {
-                needsUpdate = true;
-                updatedExpenses.push({
-                    id: `fin_emprestimo_setembro_marcia_bispo_${currentInst}`,
-                    description: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (MARCIA BISPO)',
-                    amount: 300.00,
-                    category: 'Dívidas',
-                    paid: false,
-                    dueDate: `${currentYear}-${currentMonth.toString().padStart(2, '0')}-15`,
-                    installments: { current: currentInst, total: 5 },
-                    group: 'MARCIA BISPO'
-                });
-            }
-        }
-
-        // 3. Claudio Silva September loan: 500 in 3 installments (150, 150, 200) from Oct 2026 to Dec 2026
-        const csStartYear = 2026;
-        const csStartMonth = 10;
-        const csDiff = (currentYear - csStartYear) * 12 + (currentMonth - csStartMonth);
-        if (csDiff >= 0 && csDiff < 3) {
-            const currentInst = csDiff + 1;
-            const csAmounts = [150.00, 150.00, 200.00];
-            const currentAmount = csAmounts[csDiff];
-            const hasCSSeptemberLoan = updatedExpenses.some(e => {
-                const d = (e.description || '').toUpperCase();
-                return (d.includes('CLAUDIO SILVA') || d.includes('CLAUDIO')) && (d.includes('EMPRÉSTIMO') || d.includes('EMPRESTIMO') || d.includes('SETEMBRO'));
-            });
-            if (!hasCSSeptemberLoan) {
-                needsUpdate = true;
-                updatedExpenses.push({
-                    id: `fin_emprestimo_setembro_claudio_silva_${currentInst}`,
-                    description: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (CLAUDIO SILVA)',
-                    amount: currentAmount,
-                    category: 'Dívidas',
-                    paid: false,
-                    dueDate: `${currentYear}-${currentMonth.toString().padStart(2, '0')}-15`,
-                    installments: { current: currentInst, total: 3 },
-                    group: 'CLAUDIO SILVA'
-                });
-            }
-        }
-
-        if (needsUpdate) {
-            const updated = {
-                ...monthData,
-                expenses: updatedExpenses,
-                updatedAt: Date.now()
-            };
-            saveData(updated, currentYear, currentMonth);
-        }
-    }, [monthData, currentYear, currentMonth]);
 
     // Ref for accessing latest data in closures/listeners
     const monthDataRef = useRef<MonthData | null>(null);
@@ -503,59 +260,118 @@ const App: React.FC = () => {
         if (data.expenses) data.expenses = data.expenses.filter(e => e.amount !== 232.33);
         if (data.avulsosItems) data.avulsosItems = data.avulsosItems.filter(a => a.amount !== 232.33);
 
-        // If data has already been saved or loaded with updatedAt > 0, preserve 100% of the user's modifications!
-        if (data.updatedAt && data.updatedAt > 0) {
-            const isNovDec26OrJan27 = (year === 2026 && (month === 11 || month === 12)) || (year === 2027 && month === 1);
-            data.incomes = (data.incomes || []).map(i => ({
-                ...i,
-                amount: Number(i.amount) || 0,
-                paid: !!i.paid,
-                skipped: !!i.skipped
-            }));
-            data.expenses = (data.expenses || []).filter(e => {
-                
-                return true;
-            }).map(e => {
-                const desc = (e.description || '').toUpperCase();
-                const isMarciaBrito = e.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && e.group !== 'MARCIA BISPO');
-                const isPaid = (year === 2026 && month === 9 && isMarciaBrito) ? true : !!e.paid;
-                return {
-                    ...e,
-                    amount: Number(e.amount) || 0,
-                    paid: isPaid,
-                    paidAt: isPaid ? (e.paidAt || '2026-09-02T12:00:00Z') : null,
-                    skipped: !!e.skipped
-                };
-            });
-            data.avulsosItems = (data.avulsosItems || []).filter(a => {
-                
-                return true;
-            }).map(a => {
-                const desc = (a.description || '').toUpperCase();
-                const isMarciaBrito = a.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && a.group !== 'MARCIA BISPO');
-                const isPaid = (year === 2026 && month === 9 && isMarciaBrito) ? true : !!a.paid;
-                return {
-                    ...a,
-                    amount: Number(a.amount) || 0,
-                    paid: isPaid,
-                    paidAt: isPaid ? (a.paidAt || '2026-09-02T12:00:00Z') : null,
-                    skipped: !!a.skipped
-                };
-            });
-            data.shoppingItems = data.shoppingItems || [];
-            data.bankAccounts = data.bankAccounts || [];
-            data.goals = data.goals || [];
-            data.bankReserves = data.bankReserves || { santander: 0, inter: 0, sofisa: 0 };
-            data.checkIn = data.checkIn || { isDone: false, date: null };
-            data.debtSettlements = data.debtSettlements || [
-                { id: 'set_nubank', description: 'Acordo Nubank (À Vista)', amount: 700, priority: 1, isPaid: false, notes: 'Pagamento via PIX' },
-                { id: 'set_itau_marcelly', description: 'Acordo Itaú Marcelly (À Vista)', amount: 400, priority: 2, isPaid: false, notes: 'Pagamento via PIX' }
-            ];
-            data.dailyBalances = data.dailyBalances || [];
-            return data;
-        }
+        // Initialize arrays and default objects
+        data.incomes = (data.incomes || []).map(i => ({
+            ...i,
+            amount: Number(i.amount) || 0,
+            paid: !!i.paid,
+            skipped: !!i.skipped
+        }));
+        data.expenses = (data.expenses || []).map(e => ({
+            ...e,
+            amount: Number(e.amount) || 0,
+            paid: !!e.paid,
+            skipped: !!e.skipped
+        }));
+        data.avulsosItems = (data.avulsosItems || []).map(a => ({
+            ...a,
+            amount: Number(a.amount) || 0,
+            paid: !!a.paid,
+            skipped: !!a.skipped
+        }));
+        data.shoppingItems = data.shoppingItems || [];
+        data.bankAccounts = data.bankAccounts || [];
+        data.goals = data.goals || [];
+        data.bankReserves = data.bankReserves || { santander: 0, inter: 0, sofisa: 0 };
+        data.checkIn = data.checkIn || { isDone: false, date: null };
+        data.debtSettlements = data.debtSettlements || [
+            { id: 'set_nubank', description: 'Acordo Nubank (À Vista)', amount: 700, priority: 1, isPaid: false, notes: 'Pagamento via PIX' },
+            { id: 'set_itau_marcelly', description: 'Acordo Itaú Marcelly (À Vista)', amount: 400, priority: 2, isPaid: false, notes: 'Pagamento via PIX' }
+        ];
+        data.dailyBalances = data.dailyBalances || [];
 
-        // PRESERVE USER METADATA: if the user explicitly clicked "paid", don't let hardcoded tweaks override it
+        // Purge specified removed items from the entire application root
+        const isPurgedItem = (desc: string) => {
+            const d = (desc || '').toUpperCase();
+            return d.includes('POVIZTRA') || 
+                   d.includes('VITAMINA B') || 
+                   d.includes('VITAMINA D') || 
+                   d.includes('CARTÃO DO INTER DO ANDRÉ') || 
+                   d.includes('CARTAO DO INTER DO ANDRE') ||
+                   (d.includes('INTER') && d.includes('ANDRÉ') && (d.includes('CARTÃO') || d.includes('CARTAO'))) ||
+                   (d.includes('INTER') && d.includes('ANDRE') && (d.includes('CARTÃO') || d.includes('CARTAO')));
+        };
+
+        data.expenses = (data.expenses || []).filter(e => !isPurgedItem(e.description));
+        data.avulsosItems = (data.avulsosItems || []).filter(a => !isPurgedItem(a.description));
+
+        // PRESERVE ALL USER STATES: user toggles for 'paid', 'paidAt', 'skipped', 'isSuspended', 'suspendedUntil', 'userModifiedPaid'
+        const preservedStateById = new Map<string, {
+            paid: boolean;
+            paidAt?: string | null;
+            skipped?: boolean;
+            isSuspended?: boolean;
+            suspendedUntil?: string | null;
+            userModifiedPaid?: boolean;
+            amount?: number;
+        }>();
+        const preservedStateByGroupDesc = new Map<string, {
+            paid: boolean;
+            paidAt?: string | null;
+            skipped?: boolean;
+            isSuspended?: boolean;
+            suspendedUntil?: string | null;
+            userModifiedPaid?: boolean;
+            amount?: number;
+        }>();
+        const preservedStateByDesc = new Map<string, {
+            paid: boolean;
+            paidAt?: string | null;
+            skipped?: boolean;
+            isSuspended?: boolean;
+            suspendedUntil?: string | null;
+            userModifiedPaid?: boolean;
+            amount?: number;
+        }>();
+
+        const recordState = (item: Transaction) => {
+            const state = {
+                paid: item.paid,
+                paidAt: item.paidAt,
+                skipped: item.skipped,
+                isSuspended: item.isSuspended,
+                suspendedUntil: item.suspendedUntil,
+                userModifiedPaid: item.userModifiedPaid,
+                amount: item.amount
+            };
+            if (item.id) preservedStateById.set(item.id, state);
+            const normDesc = (item.description || '').trim().toUpperCase();
+            const normGroup = (item.group || '').trim().toUpperCase();
+            if (normGroup && normDesc) {
+                preservedStateByGroupDesc.set(`${normGroup}:::${normDesc}`, state);
+            }
+            if (normDesc) {
+                preservedStateByDesc.set(normDesc, state);
+            }
+        };
+
+        (data.expenses || []).forEach(recordState);
+        (data.avulsosItems || []).forEach(recordState);
+        (data.incomes || []).forEach(recordState);
+
+        const getPreservedState = (t: Transaction) => {
+            if (t.id && preservedStateById.has(t.id)) return preservedStateById.get(t.id);
+            const normDesc = (t.description || '').trim().toUpperCase();
+            const normGroup = (t.group || '').trim().toUpperCase();
+            if (normGroup && normDesc && preservedStateByGroupDesc.has(`${normGroup}:::${normDesc}`)) {
+                return preservedStateByGroupDesc.get(`${normGroup}:::${normDesc}`);
+            }
+            if (normDesc && preservedStateByDesc.has(normDesc)) {
+                return preservedStateByDesc.get(normDesc);
+            }
+            return undefined;
+        };
+
         const originalUserModifications = new Map();
         [...data.expenses, ...data.avulsosItems, ...data.incomes].forEach(item => {
             if (item.userModifiedPaid) {
@@ -632,7 +448,7 @@ const App: React.FC = () => {
                         id: `loan_${desc.replace(/\s/g,'')}`,
                         description: desc,
                         amount: 0,
-                        category: "Dívidas",
+                        category: "Empréstimos",
                         group: group,
                         paid: false,
                         dueDate: "2026-05-15",
@@ -1053,15 +869,20 @@ const App: React.FC = () => {
                 return e;
             });
 
-            // 2. Cartão do Itaú do André is 100 reais (but 200 in July 2026, 237.96 in Sept 2026, 343.98 in Oct 2026)
+            // 2. Cartão do Itaú do André is 100 reais (but 200 in July 2026, 237.96 in Sept 2026, 500.00 in Oct 2026 and subsequent months)
             data.expenses = data.expenses.map(e => {
                 const desc = e.description.toUpperCase();
                 if (desc.includes("CARTÃO DO ITAÚ DO ANDRÉ") || desc.includes("CARTAO DO ITAU DO ANDRE")) {
                     let amt = 100.00;
                     if (year === 2026 && month === 7) amt = 200.00;
                     if (year === 2026 && month === 9) amt = 237.96;
-                    if (year === 2026 && month === 10) amt = 343.98;
+                    if (year > 2026 || (year === 2026 && month >= 10)) amt = 500.00;
                     return { ...e, amount: amt };
+                }
+                if (desc.includes("CARTÃO DO ITAÚ DA MARCELLY") || desc.includes("CARTAO DO ITAU DA MARCELLY")) {
+                    if (year > 2026 || (year === 2026 && month >= 10)) {
+                        return { ...e, amount: 200.00 };
+                    }
                 }
                 return e;
             });
@@ -1119,6 +940,7 @@ const App: React.FC = () => {
             const targetIagoAmount = (year === 2026 && month === 7) ? 1204.00 : (year > 2026 || (year === 2026 && month >= 8) ? 0 : 1819.22);
             if (targetIagoAmount === 0) {
                 data.expenses = data.expenses.filter(e => !(e.description.includes('CARTÃO DO IAGO') || e.description.includes('CARTAO DO IAGO')));
+                data.avulsosItems = data.avulsosItems.filter(e => !(e.description.includes('CARTÃO DO IAGO') || e.description.includes('CARTAO DO IAGO')));
             } else {
                 const hasCartaoIago = data.expenses.some(e => e.description === 'CARTÃO DO IAGO' || e.description.includes('NUBANK'));
                 if (!hasCartaoIago) {
@@ -1167,7 +989,7 @@ const App: React.FC = () => {
                         id: `fin_EMPRÉSTIMOPARAPAGARASCONTASDEJUNHO_${currentInst}`,
                         description: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO",
                         amount: 486.00, // 1944.00 / 4
-                        category: "Dívidas",
+                        category: "Empréstimos",
                         paid: month === 7, userModifiedPaid: month === 7,
                         dueDate: `2026-${month.toString().padStart(2,'0')}-20`,
                         installments: { current: currentInst, total: 4 },
@@ -1181,47 +1003,11 @@ const App: React.FC = () => {
                             return {
                                 ...e,
                                 amount: 486.00,
-                                category: "Dívidas",
+                                category: "Empréstimos",
                                 dueDate: `2026-${month.toString().padStart(2,'0')}-20`,
                                 installments: { current: currentInst, total: 4 },
                                 paid: month === 7 ? true : e.paid, userModifiedPaid: month === 7 ? true : e.userModifiedPaid,
                                 group: 'MARCIA BRITO'
-                            };
-                        }
-                        return e;
-                    });
-                }
-            }
-
-            // Ensure CARTÃO DO INTER DO ANDRÉ is present for months, with specific adjustments (excluded for Sept 2026)
-            if (year === 2026 && month === 9) {
-                data.expenses = data.expenses.filter(e => !(e.description.toUpperCase().includes("CARTÃO DO INTER DO ANDRÉ") || e.description.toUpperCase().includes("CARTAO DO INTER DO ANDRE")));
-            } else {
-                const hasInter = data.expenses.some(e => e.description.toUpperCase().includes("CARTÃO DO INTER DO ANDRÉ") || e.description.toUpperCase().includes("CARTAO DO INTER DO ANDRE"));
-                const targetInterAmount = (year === 2026 && month === 8) ? 1100.00 : 386.00;
-                const isInterPaidDefault = (year === 2026 && month === 7); // July is marked as paid as requested earlier, others are unpaid by default
-
-                if (!hasInter) {
-                    data.expenses.push({
-                        id: `exp_cartao_inter_andre_${year}_${month}`,
-                        description: "CARTÃO DO INTER DO ANDRÉ",
-                        amount: targetInterAmount,
-                        category: "Moradia",
-                        paid: isInterPaidDefault,
-                        userModifiedPaid: isInterPaidDefault,
-                        dueDate: `${year}-${month.toString().padStart(2,'0')}-10`,
-                        installments: { current: 1, total: 1 },
-                        group: 'MORADIA'
-                    });
-                } else {
-                    // Ensure correct amount and paid state for existing items
-                    data.expenses = data.expenses.map(e => {
-                        if (e.description.toUpperCase().includes("CARTÃO DO INTER DO ANDRÉ") || e.description.toUpperCase().includes("CARTAO DO INTER DO ANDRE")) {
-                            return { 
-                                ...e, 
-                                amount: targetInterAmount,
-                                paid: (year === 2026 && month === 7) ? true : e.paid,
-                                userModifiedPaid: (year === 2026 && month === 7) ? true : e.userModifiedPaid
                             };
                         }
                         return e;
@@ -1353,53 +1139,77 @@ const App: React.FC = () => {
         }
 
         if ((year === 2026 && month >= 8) || (year === 2027 && month === 1)) {
-            const addOrUpdateIagoExpense = (description: string, amount: number, idSuffix: string, installments: any) => {
-                const hasExpense = data.expenses.some(e => e.description.toUpperCase().includes(description.toUpperCase()));
-                if (!hasExpense) {
+            const addOrUpdateIagoExpense = (description: string, amount: number, idSuffix: string, installments: any, category: string = "Lazer", matchPattern?: string) => {
+                const searchPattern = (matchPattern || description).toUpperCase();
+                const index = data.expenses.findIndex(e => e.description.toUpperCase().includes(searchPattern));
+                const fullName = description.replace(' (IAGO)', '');
+                if (index < 0) {
                     data.expenses.push({
                         id: `exp_${idSuffix}_iago_${year}_${month}`,
-                        description: `${description} (IAGO)`,
+                        description: fullName,
                         amount: amount,
-                        category: "Iago",
+                        category: category,
                         paid: false,
                         dueDate: `${year}-${month.toString().padStart(2,'0')}-07`,
                         installments: installments,
                         group: 'IAGO (CARTÃO NUBANK)'
                     });
                 } else {
-                    data.expenses = data.expenses.map(e => e.description.toUpperCase().includes(description.toUpperCase()) 
-                        ? { ...e, description: `${description} (IAGO)`, amount: amount, installments: installments, dueDate: `${year}-${month.toString().padStart(2,'0')}-07`, group: 'IAGO (CARTÃO NUBANK)' } : e);
+                    data.expenses[index] = {
+                        ...data.expenses[index],
+                        description: fullName,
+                        amount: amount,
+                        category: category,
+                        installments: installments,
+                        dueDate: `${year}-${month.toString().padStart(2,'0')}-07`,
+                        group: 'IAGO (CARTÃO NUBANK)'
+                    };
                 }
             };
 
             if (year === 2026 && month === 8) {
-                addOrUpdateIagoExpense("AUTO POSTO", 300.84, "auto_posto", null);
-                addOrUpdateIagoExpense("JUL AIRBNB", 190.75, "airbnb", null);
-                addOrUpdateIagoExpense("CLARO FLEX MARCELLY", 44.80, "claro_flex_marcelly", null);
-                addOrUpdateIagoExpense("CLARO FLEX ANDRÉ", 59.90, "claro_flex_andre", null);
+                addOrUpdateIagoExpense("AUTO POSTO", 300.84, "auto_posto", null, "Transporte", "AUTO POSTO");
+                addOrUpdateIagoExpense("JUL AIRBNB", 190.75, "airbnb", null, "Estadias", "JUL AIRBNB");
+                addOrUpdateIagoExpense("CLARO FLEX MARCELLY", 44.80, "claro_flex_marcelly", null, "Moradia", "CLARO FLEX MARCELLY");
+                addOrUpdateIagoExpense("CLARO FLEX ANDRÉ", 59.90, "claro_flex_andre", null, "Moradia", "CLARO FLEX ANDRÉ");
             }
+
             if (year === 2026 && month === 9) {
-                addOrUpdateIagoExpense("CLAROFLEX ANDRÉ", 59.90, "claroflex_andre", null);
-                addOrUpdateIagoExpense("CLAROFLEX MARCELLY", 44.90, "claroflex_marcelly", null);
-                addOrUpdateIagoExpense("ABASTECIMENTO 1", 275.00, "abastecimento_1", null);
-                addOrUpdateIagoExpense("ABASTECIMENTO 2", 150.00, "abastecimento_2", null);
-                addOrUpdateIagoExpense("UBER", 12.58, "uber_iago", null);
+                addOrUpdateIagoExpense("CLAROFLEX ANDRÉ", 59.90, "claroflex_andre", null, "Moradia", "CLAROFLEX ANDR");
+                addOrUpdateIagoExpense("CLAROFLEX MARCELLY", 44.90, "claroflex_marcelly", null, "Moradia", "CLAROFLEX MARCELLY");
+                addOrUpdateIagoExpense("ABASTECIMENTO 1", 275.00, "abastecimento_1", null, "Transporte", "ABASTECIMENTO 1");
+                addOrUpdateIagoExpense("ABASTECIMENTO 2", 150.00, "abastecimento_2", null, "Transporte", "ABASTECIMENTO 2");
+                addOrUpdateIagoExpense("PASSAGENS PARA SALVADOR", 216.94, "passagens_salvador", { current: 2, total: 6 }, "Viagens", "PASSAGENS PARA SALVADOR");
+                addOrUpdateIagoExpense("PRIMEIRO CARRO ALUGADO", 63.17, "primeiro_carro", { current: 2, total: 6 }, "Iago", "PRIMEIRO CARRO");
+                addOrUpdateIagoExpense("SEGUNDO CARRO ALUGADO", 78.57, "segundo_carro", { current: 2, total: 6 }, "Iago", "SEGUNDO CARRO");
+                addOrUpdateIagoExpense("AIRBNB (HMT3Q9TBYB)", 190.74, "airbnb_hmt3q9tbyb", { current: 2, total: 6 }, "Estadias", "HMT3Q9TBYB");
+                addOrUpdateIagoExpense("AIRBNB (hmjhtc29yf)", 69.64, "airbnb_hmjhtc29yf", { current: 2, total: 6 }, "Estadias", "HMJHTC29YF");
+                addOrUpdateIagoExpense("AIRBNB (hm2ydd2j9t)", 52.17, "airbnb_hm2ydd2j9t", { current: 2, total: 6 }, "Estadias", "HM2YDD2J9T");
+                addOrUpdateIagoExpense("AIRBNB (hmepqps338)", 63.33, "airbnb_hmepqps338", { current: 2, total: 6 }, "Estadias", "HMEPQPS338");
+                addOrUpdateIagoExpense("AIRBNB (hm5kaqjy4j)", 27.17, "airbnb_hm5kaqjy4j", { current: 2, total: 6 }, "Estadias", "HM5KAQJY4J");
+                addOrUpdateIagoExpense("EMPRÉSTIMO PARA VIAJAR", 416.66, "emprestimo_viajar", { current: 2, total: 6 }, "Iago", "EMPRÉSTIMO PARA VIAJAR");
             }
-            if (iagoNewInst >= 1 && iagoNewInst <= 6) {
-                const targetPassagensAmount = 216.94;
-                addOrUpdateIagoExpense("PASSAGENS PARA SALVADOR", targetPassagensAmount, "passagens_salvador", { current: iagoNewInst, total: 6 });
-                addOrUpdateIagoExpense("PRIMEIRO CARRO ALUGADO", 63.17, "primeiro_carro", { current: iagoNewInst, total: 6 });
-                addOrUpdateIagoExpense("SEGUNDO CARRO ALUGADO", 78.57, "segundo_carro", { current: iagoNewInst, total: 6 });
-                addOrUpdateIagoExpense("AIRBNB (HMT3Q9TBYB)", 190.74, "airbnb_hmt3q9tbyb", { current: iagoNewInst, total: 6 });
-                
-                // Added/Updated based on user request Sept 2026
-                addOrUpdateIagoExpense("AIRBNB HMJHTC29YF", 30.95, "airbnb_hmjhtc29yf", { current: iagoNewInst, total: 6 });
-                addOrUpdateIagoExpense("AIRBNB HM2YDD2J9T", 95.01, "airbnb_hm2ydd2j9t", { current: iagoNewInst, total: 6 });
-                addOrUpdateIagoExpense("EMPRÉSTIMO PARA VIAJAR", 416.66, "emprestimo_viajar", { current: iagoNewInst, total: 6 });
+
+            // October 2026 to February 2027: User screenshot items
+            if ((year === 2026 && month >= 10) || (year === 2027 && month <= 2)) {
+                const targetInst8 = (year - 2026) * 12 + month - 8 + 1; // 10 -> 3, 11 -> 4, 12 -> 5, 1 -> 6
+
+                if (targetInst8 >= 1 && targetInst8 <= 6) {
+                    addOrUpdateIagoExpense("AIRBNB (HMT3Q9TBYB)", 190.74, "airbnb_hmt3q9tbyb", { current: targetInst8, total: 6 }, "Estadias", "HMT3Q9TBYB");
+                    addOrUpdateIagoExpense("AIRBNB (hm2ydd2j9t)", 52.17, "airbnb_hm2ydd2j9t", { current: targetInst8, total: 6 }, "Estadias", "HM2YDD2J9T");
+                    addOrUpdateIagoExpense("AIRBNB (hmepqps338)", 63.33, "airbnb_hmepqps338", { current: targetInst8, total: 6 }, "Estadias", "HMEPQPS338");
+                    addOrUpdateIagoExpense("AIRBNB (hm5kaqjy4j)", 27.17, "airbnb_hm5kaqjy4j", { current: targetInst8, total: 6 }, "Estadias", "HM5KAQJY4J");
+                    addOrUpdateIagoExpense("AIRBNB (hmjhtc29yf)", 69.64, "airbnb_hmjhtc29yf", { current: targetInst8, total: 6 }, "Estadias", "HMJHTC29YF");
+                    addOrUpdateIagoExpense("PRIMEIRO CARRO ALUGADO", 63.17, "primeiro_carro", { current: targetInst8, total: 6 }, "Iago", "PRIMEIRO CARRO");
+                    addOrUpdateIagoExpense("SEGUNDO CARRO ALUGADO", 78.57, "segundo_carro", { current: targetInst8, total: 6 }, "Iago", "SEGUNDO CARRO");
+                    addOrUpdateIagoExpense("PASSAGENS PARA SALVADOR", 216.94, "passagens_salvador", { current: targetInst8, total: 6 }, "Viagens", "PASSAGENS PARA SALVADOR");
+                    addOrUpdateIagoExpense("EMPRÉSTIMO PARA VIAJAR", 416.66, "emprestimo_viajar", { current: targetInst8, total: 6 }, "Iago", "EMPRÉSTIMO PARA VIAJAR");
+                }
+                addOrUpdateIagoExpense("CLAROFLEX ANDRÉ", 59.90, "claroflex_andre", null, "Moradia", "CLAROFLEX ANDR");
+                addOrUpdateIagoExpense("CLAROFLEX MARCELLY", 44.90, "claroflex_marcelly", null, "Moradia", "CLAROFLEX MARCELLY");
             }
             
             // Cleanup old variables and requested removals
-            const isNovDec26OrJan27 = (year === 2026 && (month === 11 || month === 12)) || (year === 2027 && month === 1);
             data.expenses = data.expenses.filter(e => {
                 const d = e.description.toUpperCase();
                 
@@ -1407,7 +1217,7 @@ const App: React.FC = () => {
                        !(d.includes("PRIMEIRA ESTADIA EM SALVADOR") && !d.includes("AIRBNB")) &&
                        !(d.includes("SEGUNDA ESTADIA EM SALVADOR") && !d.includes("AIRBNB")) &&
                        !(d.includes("COMPRA (697+697)")) &&
-                       !(d === "PASSAGENS AÉREAS" || d === "PASSAGENS AEREAS") &&
+                       !(d === "PASSAGENS AÉREAS" || d === "PASSAGENS AEREAS" || d.includes("PASSAGENS AÉREAS (IAGO)") || d.includes("PASSAGENS AEREAS (IAGO)")) &&
                        !(d.includes("GOL LINHAS")) &&
                        !(d.includes("02 JUL GOL LINHAS")) &&
                        !(d.includes("ALUGUEL DO CARRO")) &&
@@ -1473,36 +1283,25 @@ const App: React.FC = () => {
                 if (desc === 'ALUGUEL') {
                     return {
                         ...e,
-                        paid: true,
-                        userModifiedPaid: true,
-                        paidAt: e.paidAt || '2026-09-01T12:00:00Z'
+                        dueDate: '2026-09-01'
                     };
                 }
                 if (desc.includes('INTERNET DA CASA') || desc === 'INTERNET') {
                     return {
                         ...e,
-                        amount: 125.89,
-                        paid: true,
-                        userModifiedPaid: true,
-                        paidAt: e.paidAt || '2026-09-01T12:00:00Z'
+                        amount: 125.89
                     };
                 }
                 if (desc.includes('PSICÓLOGA') || desc.includes('PSICOLOGA')) {
                     return {
                         ...e,
-                        amount: 350.00,
-                        paid: true,
-                        userModifiedPaid: true,
-                        paidAt: e.paidAt || '2026-09-01T12:00:00Z'
+                        amount: 350.00
                     };
                 }
                 if (desc.includes('CARTÃO DO ITAÚ DO ANDRÉ') || desc.includes('CARTAO DO ITAU DO ANDRE')) {
                     return {
                         ...e,
-                        amount: 237.96,
-                        paid: true,
-                        userModifiedPaid: true,
-                        paidAt: e.paidAt || '2026-09-01T12:00:00Z'
+                        amount: 237.96
                     };
                 }
                 if (desc.includes('CARTÃO DO ITAÚ DA MARCELLY') || desc.includes('CARTAO DO ITAU DA MARCELLY')) {
@@ -1514,28 +1313,26 @@ const App: React.FC = () => {
                 return e;
             });
 
-            // Ensure paid July loan of 500 for Marcia Bispo in September
+            // Ensure July loan of 500 for Marcia Bispo in September
             const hasJulyLoan = data.expenses.some(e => e.description.toUpperCase().includes('EMPRÉSTIMO COM MARCIA BISPO (JULHO)') || e.description.toUpperCase().includes('EMPRÉSTIMO DE JULHO'));
             if (!hasJulyLoan) {
                 data.expenses.push({
                     id: 'loan_mb_july_sep26',
                     description: 'EMPRÉSTIMO DE JULHO (MARCIA BISPO)',
                     amount: 500.00,
-                    category: 'Dívidas',
-                    paid: true,
-                    userModifiedPaid: true,
+                    category: 'Empréstimos',
+                    paid: false,
                     dueDate: '2026-09-01',
-                    paidAt: '2026-09-01T12:00:00Z',
                     group: 'MARCIA BISPO'
                 });
             }
 
-            // Marcia Brito installment counts and items for September 2026 (All marked as paid as requested)
+            // Marcia Brito installment counts and items for September 2026
             const mbOverrides: Array<{ match: (d: string) => boolean; desc: string; current: number; total: number; amount: number; cat: string }> = [
                 { match: d => d.includes('APPAI DO ANDRÉ') || d.includes('APPAI DO ANDRE') || (d.includes('APPAI') && d.includes('ANDRÉ')), desc: 'APPAI DO ANDRÉ', current: 9, total: 12, amount: 129.50, cat: 'Saúde' },
                 { match: d => d.includes('INTERMÉDICA DO ANDRÉ') || d.includes('INTERMEDICA DO ANDRE') || (d.includes('INTERMÉDICA') && d.includes('ANDRÉ')), desc: 'INTERMÉDICA DO ANDRÉ', current: 9, total: 12, amount: 123.00, cat: 'Saúde' },
                 { match: d => d.includes('DENTISTA'), desc: 'DENTISTA', current: 1, total: 3, amount: 250.00, cat: 'Saúde' },
-                { match: d => d.includes('EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO') || d.includes('EMPRESTIMO PARA PAGAR AS CONTAS DE JUNHO'), desc: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO', current: 3, total: 4, amount: 486.00, cat: 'Dívidas' },
+                { match: d => d.includes('EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO') || d.includes('EMPRESTIMO PARA PAGAR AS CONTAS DE JUNHO'), desc: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO', current: 3, total: 4, amount: 486.00, cat: 'Empréstimos' },
                 { match: d => d.includes('FACULDADE DA MARCELLY') || d.includes('FACULDADE'), desc: 'FACULDADE DA MARCELLY', current: 9, total: 10, amount: 202.68, cat: 'Educação' },
                 { match: d => d.includes('KR AUTOPEÇAS') || d.includes('KR AUTOPECAS'), desc: 'KR AUTOPEÇAS', current: 4, total: 7, amount: 41.57, cat: 'Transporte' },
                 { match: d => d.includes('RENEGOCIAR CARREFOUR') || d.includes('CARREFOUR'), desc: 'RENEGOCIAR CARREFOUR', current: 9, total: 16, amount: 312.50, cat: 'Dívidas' },
@@ -1552,10 +1349,7 @@ const App: React.FC = () => {
                         amount: item.amount,
                         category: item.cat,
                         installments: { current: item.current, total: item.total },
-                        group: 'MARCIA BRITO',
-                        paid: true,
-                        paidAt: data.expenses[index].paidAt || '2026-09-02T12:00:00Z',
-                        userModifiedPaid: true
+                        group: 'MARCIA BRITO'
                     };
                 } else {
                     data.expenses.push({
@@ -1563,51 +1357,21 @@ const App: React.FC = () => {
                         description: item.desc,
                         amount: item.amount,
                         category: item.cat,
-                        paid: true,
-                        paidAt: '2026-09-02T12:00:00Z',
+                        paid: false,
                         dueDate: '2026-09-12',
                         installments: { current: item.current, total: item.total },
-                        group: 'MARCIA BRITO',
-                        userModifiedPaid: true
+                        group: 'MARCIA BRITO'
                     });
                 }
             });
 
-            // Mark all items with group MARCIA BRITO as paid in September 2026
-            data.expenses = data.expenses.map(e => {
-                const desc = e.description.toUpperCase();
-                const isMarciaBrito = e.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && e.group !== 'MARCIA BISPO');
-                if (isMarciaBrito) {
-                    return {
-                        ...e,
-                        paid: true,
-                        paidAt: e.paidAt || '2026-09-02T12:00:00Z',
-                        userModifiedPaid: true
-                    };
-                }
-                return e;
-            });
-            data.avulsosItems = data.avulsosItems.map(a => {
-                const desc = a.description.toUpperCase();
-                const isMarciaBrito = a.group === 'MARCIA BRITO' || (desc.includes('MARCIA') && !desc.includes('BISPO') && a.group !== 'MARCIA BISPO');
-                if (isMarciaBrito) {
-                    return {
-                        ...a,
-                        paid: true,
-                        paidAt: a.paidAt || '2026-09-02T12:00:00Z',
-                        userModifiedPaid: true
-                    };
-                }
-                return a;
-            });
-
             // Lili Torres items for September 2026
             const liliOverrides: Array<{ match: (d: string) => boolean; desc: string; current: number; total: number; amount: number; cat: string }> = [
-                { match: d => d.includes('EMPRÉSTIMO COM LILI') || d.includes('EMPRESTIMO COM LILI'), desc: 'EMPRÉSTIMO COM LILI', current: 3, total: 5, amount: 800.00, cat: 'Dívidas' },
-                { match: d => d.includes('SHEIN'), desc: 'COMPRA NA SHEIN (LILI)', current: 2, total: 3, amount: 94.07, cat: 'Outros' },
-                { match: d => d.includes('BRISA'), desc: 'COMPRA NA BRISA (LILI)', current: 2, total: 3, amount: 86.67, cat: 'Outros' },
-                { match: d => d.includes('DALUZ'), desc: 'COMPRA NA DALUZ (LILI)', current: 2, total: 3, amount: 56.00, cat: 'Outros' },
-                { match: d => d.includes('NORDESTE') || (d.includes('VIAGEM') && d.includes('LILI')), desc: 'EMPRÉSTIMO VIAGEM NORDESTE (LILI)', current: 2, total: 6, amount: 335.90, cat: 'Dívidas' },
+                { match: d => d.includes('EMPRÉSTIMO COM LILI') || d.includes('EMPRESTIMO COM LILI'), desc: 'EMPRÉSTIMO COM LILI', current: 3, total: 5, amount: 800.00, cat: 'Empréstimos' },
+                { match: d => d.includes('SHEIN'), desc: 'COMPRA NA SHEIN (LILI)', current: 2, total: 3, amount: 94.07, cat: 'Roupas' },
+                { match: d => d.includes('BRISA'), desc: 'COMPRA NA BRISA (LILI)', current: 2, total: 3, amount: 86.67, cat: 'Roupas' },
+                { match: d => d.includes('DALUZ'), desc: 'COMPRA NA DALUZ (LILI)', current: 2, total: 3, amount: 56.00, cat: 'Roupas' },
+                { match: d => d.includes('NORDESTE') || (d.includes('VIAGEM') && d.includes('LILI')), desc: 'EMPRÉSTIMO VIAGEM NORDESTE (LILI)', current: 2, total: 6, amount: 335.90, cat: 'Empréstimos' },
                 { match: d => d.includes('PRESENTE DO ANDRÉ') || d.includes('PRESENTE DO ANDRE') || (d.includes('PRESENTE') && d.includes('LILI')), desc: 'PRESENTE DO ANDRÉ (LILI)', current: 1, total: 3, amount: 119.97, cat: 'Outros' }
             ];
 
@@ -1638,10 +1402,7 @@ const App: React.FC = () => {
 
             // André separated medicine expenses for September 2026
             const remediosAndresList = [
-                { desc: 'REMÉDIO DO ANDRÉ (TEA/TDAH)', amount: 250.00, due: '2026-09-10' },
-                { desc: 'CANETA POVIZTRA (CONTROLE METABÓLICO)', amount: 490.00, due: '2026-09-10' },
-                { desc: 'VITAMINA D INJETÁVEL (CONTROLE METABÓLICO)', amount: 152.00, due: '2026-09-10' },
-                { desc: 'VITAMINA B (CONTROLE METABÓLICO)', amount: 46.00, due: '2026-09-10' }
+                { desc: 'REMÉDIO DO ANDRÉ (TEA/TDAH)', amount: 250.00, due: '2026-09-10' }
             ];
             remediosAndresList.forEach(item => {
                 const index = data.expenses.findIndex(e => e.description.toUpperCase() === item.desc);
@@ -1664,6 +1425,62 @@ const App: React.FC = () => {
                     });
                 }
             });
+
+            // Marcia Brito items for September 2026
+            const mbPedreiroIdx = data.expenses.findIndex(e => 
+                e.description.toUpperCase().includes('PEDREIRO') && 
+                (e.group === 'MARCIA BRITO' || !e.group)
+            );
+            if (mbPedreiroIdx >= 0) {
+                data.expenses[mbPedreiroIdx] = {
+                    ...data.expenses[mbPedreiroIdx],
+                    description: 'DIÁRIA DE PEDREIRO',
+                    amount: 160.00,
+                    category: 'Moradia',
+                    dueDate: '2026-09-12',
+                    installments: { current: 1, total: 1 },
+                    group: 'MARCIA BRITO'
+                };
+            } else {
+                data.expenses.push({
+                    id: 'fin_diaria_pedreiro_sep26',
+                    description: 'DIÁRIA DE PEDREIRO',
+                    amount: 160.00,
+                    category: 'Moradia',
+                    paid: false,
+                    dueDate: '2026-09-12',
+                    installments: { current: 1, total: 1 },
+                    group: 'MARCIA BRITO'
+                });
+            }
+
+            // Moradia items for September 2026
+            const seguradoraIdx = data.expenses.findIndex(e => 
+                (e.description.toUpperCase().includes('ADESÃO DA SEGURADORA') || e.description.toUpperCase().includes('SEGURADORA')) && 
+                (e.group === 'MORADIA' || !e.group)
+            );
+            if (seguradoraIdx >= 0) {
+                data.expenses[seguradoraIdx] = {
+                    ...data.expenses[seguradoraIdx],
+                    description: 'ADESÃO DA SEGURADORA',
+                    amount: 100.00,
+                    category: 'Moradia',
+                    dueDate: '2026-09-05',
+                    installments: { current: 1, total: 1 },
+                    group: 'MORADIA'
+                };
+            } else {
+                data.expenses.push({
+                    id: 'fin_adesao_seguradora_sep26',
+                    description: 'ADESÃO DA SEGURADORA',
+                    amount: 100.00,
+                    category: 'Moradia',
+                    paid: false,
+                    dueDate: '2026-09-05',
+                    installments: { current: 1, total: 1 },
+                    group: 'MORADIA'
+                });
+            }
 
             // Rebecca Brito items for September 2026 (Parcela 22 e Parcela 23)
             data.expenses = data.expenses.filter(e => !e.description.toUpperCase().includes('CIDADANIA'));
@@ -1695,30 +1512,28 @@ const App: React.FC = () => {
                 }
             });
 
-            // Iago Cartão Nubank items for September 2026
+            // Iago Cartão Nubank items for September 2026 (all with exact decimal cents)
             const iagoOverridesSept2026 = [
-                { match: (d: string) => d.includes('UBER'), desc: 'UBER', amount: 12.58, cat: 'Transporte', day: 7, inst: null },
-                { match: (d: string) => d.includes('HMJHTC29YF') || (d.includes('AIRBNB') && d.includes('SALVADOR')), desc: 'AIRBNB SALVADOR 16-18 JUL (hmjhtc29yf)', amount: 30.95, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
-                { match: (d: string) => d.includes('HM2YDD2J9T') || (d.includes('AIRBNB') && d.includes('ARACAJU')), desc: 'AIRBNB ARACAJU 19-21 JUL (hm2ydd2j9t)', amount: 95.01, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
-                { match: (d: string) => d.includes('EMPRÉSTIMO PARA VIAJAR') || d.includes('EMPRESTIMO PARA VIAJAR'), desc: 'EMPRÉSTIMO PARA VIAJAR', amount: 416.66, cat: 'Dívidas', day: 7, inst: { current: 2, total: 6 } },
                 { match: (d: string) => d.includes('ABASTECIMENTO 1'), desc: 'ABASTECIMENTO 1', amount: 275.00, cat: 'Transporte', day: 7, inst: null },
                 { match: (d: string) => d.includes('ABASTECIMENTO 2'), desc: 'ABASTECIMENTO 2', amount: 150.00, cat: 'Transporte', day: 7, inst: null },
-                { match: (d: string) => d.includes('HMT3Q9TBYB'), desc: 'AIRBNB (HMT3Q9TBYB)', amount: 190.74, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
-                { match: (d: string) => d.includes('HMEPQPS338'), desc: 'AIRBNB MACEIÓ 17-19 JUL (hmepqps338)', amount: 63.33, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
-                { match: (d: string) => d.includes('HM5KAQJY4J'), desc: 'AIRBNB MACEIÓ 19-20 JUL (hm5kaqjy4j)', amount: 27.17, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
-                { match: (d: string) => d.includes('ACRÉSCIMO PASSAGEM') || d.includes('ACRESCIMO PASSAGEM'), desc: 'ACRÉSCIMO PASSAGEM AÉREA', amount: 120.00, cat: 'Lazer', day: 7, inst: { current: 2, total: 2 } },
+                { match: (d: string) => d.includes('ACRÉSCIMO PASSAGEM') || d.includes('ACRESCIMO PASSAGEM'), desc: 'ACRÉSCIMO PASSAGEM AÉREA', amount: 120.00, cat: 'Iago', day: 7, inst: { current: 2, total: 2 } },
+                { match: (d: string) => d.includes('HMT3Q9TBYB'), desc: 'AIRBNB (HMT3Q9TBYB)', amount: 190.74, cat: 'Estadias', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('HM2YDD2J9T') || (d.includes('AIRBNB') && d.includes('ARACAJU')), desc: 'AIRBNB (hm2ydd2j9t)', amount: 52.17, cat: 'Estadias', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('HMEPQPS338'), desc: 'AIRBNB (hmepqps338)', amount: 63.33, cat: 'Estadias', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('HM5KAQJY4J'), desc: 'AIRBNB (hm5kaqjy4j)', amount: 27.17, cat: 'Estadias', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('HMJHTC29YF') || (d.includes('AIRBNB') && d.includes('SALVADOR')), desc: 'AIRBNB (hmjhtc29yf)', amount: 69.64, cat: 'Estadias', day: 7, inst: { current: 2, total: 6 } },
                 { match: (d: string) => d === 'CLAROFLEX ANDRÉ' || d === 'CLAROFLEX ANDRE' || d.includes('CLAROFLEX ANDRÉ'), desc: 'CLAROFLEX ANDRÉ', amount: 59.90, cat: 'Moradia', day: 7, inst: null },
                 { match: (d: string) => d === 'CLAROFLEX MARCELLY' || d.includes('CLAROFLEX MARCELLY'), desc: 'CLAROFLEX MARCELLY', amount: 44.90, cat: 'Moradia', day: 7, inst: null },
                 { match: (d: string) => d.includes('COMPRAS GUANABARA') || d.includes('GUANABARA'), desc: 'COMPRAS GUANABARA', amount: 923.54, cat: 'Alimentação', day: 7, inst: null },
-                { match: (d: string) => d.includes('BAHIA') || d.includes('INGRESSO JOGO'), desc: 'INGRESSO JOGO BAHIA', amount: 214.34, cat: 'Lazer', day: 7, inst: { current: 2, total: 2 } },
-                { match: (d: string) => d.includes('PASSAGENS AÉREAS (IAGO)') || d.includes('PASSAGENS AEREAS (IAGO)'), desc: 'PASSAGENS AÉREAS (IAGO)', amount: 232.33, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
-                { match: (d: string) => d.includes('PASSAGENS PARA SALVADOR'), desc: 'PASSAGENS PARA SALVADOR', amount: 216.94, cat: 'Lazer', day: 7, inst: { current: 2, total: 6 } },
-                { match: (d: string) => d.includes('PRIMEIRO CARRO'), desc: 'PRIMEIRO CARRO ALUGADO', amount: 63.17, cat: 'Transporte', day: 7, inst: { current: 2, total: 6 } },
-                { match: (d: string) => d.includes('SEGUNDO CARRO'), desc: 'SEGUNDO CARRO ALUGADO', amount: 78.57, cat: 'Transporte', day: 7, inst: { current: 2, total: 6 } }
+                { match: (d: string) => d.includes('EMPRÉSTIMO PARA VIAJAR') || d.includes('EMPRESTIMO PARA VIAJAR'), desc: 'EMPRÉSTIMO PARA VIAJAR', amount: 416.66, cat: 'Empréstimos', day: 7, inst: { current: 1, total: 6 } },
+                { match: (d: string) => d.includes('BAHIA') || d.includes('INGRESSO JOGO'), desc: 'INGRESSO JOGO BAHIA', amount: 214.34, cat: 'Iago', day: 7, inst: { current: 2, total: 2 } },
+                { match: (d: string) => d.includes('PASSAGENS PARA SALVADOR'), desc: 'PASSAGENS PARA SALVADOR', amount: 216.94, cat: 'Viagens', day: 7, inst: { current: 1, total: 6 } },
+                { match: (d: string) => d.includes('PRIMEIRO CARRO'), desc: 'PRIMEIRO CARRO ALUGADO', amount: 63.17, cat: 'Viagens', day: 7, inst: { current: 2, total: 6 } },
+                { match: (d: string) => d.includes('SEGUNDO CARRO'), desc: 'SEGUNDO CARRO ALUGADO', amount: 78.57, cat: 'Viagens', day: 7, inst: { current: 2, total: 6 } }
             ];
 
             iagoOverridesSept2026.forEach(item => {
-                const index = data.expenses.findIndex(e => item.match(e.description.toUpperCase()) && (e.group === 'IAGO (CARTÃO NUBANK)' || !e.group));
+                const index = data.expenses.findIndex(e => item.match(e.description.toUpperCase()) && (e.group?.toUpperCase().includes('IAGO') || !e.group));
                 if (index >= 0) {
                     data.expenses[index] = {
                         ...data.expenses[index],
@@ -1743,42 +1558,362 @@ const App: React.FC = () => {
                 }
             });
 
-            // Jady items for September 2026
-            const jadyOverridesSept2026 = [
-                { match: (d: string) => d.includes('SAFARI') || d.includes('PASSEIO'), desc: 'PASSEIO DE SAFARI (JADY)', amount: 571.60, cat: 'Lazer', day: 10, inst: { current: 7, total: 10 } },
-                { match: (d: string) => d.includes('MAQUIAGEM'), desc: 'COMPRA DE MAQUIAGEM (JADY)', amount: 116.00, cat: 'Outros', day: 10, inst: { current: 2, total: 4 } },
-                { match: (d: string) => d.includes('TÊNIS') || d.includes('TENIS'), desc: 'COMPRA DE TÊNIS (JADY)', amount: 309.99, cat: 'Outros', day: 10, inst: { current: 2, total: 4 } }
-            ];
+            // Clean up unwanted items from September 2026 (UBER from Iago, unwanted Jady items)
+            data.expenses = data.expenses.filter(e => {
+                const d = e.description.toUpperCase();
+                const g = (e.group || '').toUpperCase();
+                if ((g.includes('IAGO') || d.includes('(IAGO)')) && d.includes('UBER')) {
+                    return false;
+                }
+                if (e.group === 'JADY' || e.description.toUpperCase().includes('(JADY)')) {
+                    if (d.includes('SAFARI') || d.includes('MAQUIAGEM') || d.includes('TÊNIS') || d.includes('TENIS')) {
+                        return false;
+                    }
+                }
+                return true;
+            });
 
-            jadyOverridesSept2026.forEach(item => {
-                const index = data.expenses.findIndex(e => item.match(e.description.toUpperCase()) && (e.group === 'JADY' || !e.group));
-                if (index >= 0) {
-                    data.expenses[index] = {
-                        ...data.expenses[index],
-                        description: item.desc,
-                        amount: item.amount,
-                        category: item.cat,
-                        dueDate: `2026-09-${item.day.toString().padStart(2, '0')}`,
-                        installments: item.inst,
-                        group: 'JADY'
-                    };
-                } else {
-                    data.expenses.push({
-                        id: `jady_${item.desc.replace(/[^A-Z0-9]/gi, '')}_sep26`,
-                        description: item.desc,
-                        amount: item.amount,
-                        category: item.cat,
-                        paid: false,
-                        dueDate: `2026-09-${item.day.toString().padStart(2, '0')}`,
-                        installments: item.inst,
-                        group: 'JADY'
-                    });
+            // Jady items for September 2026: Empréstimo para Viagem de Salvador (2/3) R$ 395,26
+            const jadyLoanIdx = data.expenses.findIndex(e => 
+                (e.description.toUpperCase().includes('VIAGEM DE SALVADOR') || e.description.toUpperCase().includes('SALVADOR')) && 
+                (e.group === 'JADY' || !e.group)
+            );
+            if (jadyLoanIdx >= 0) {
+                data.expenses[jadyLoanIdx] = {
+                    ...data.expenses[jadyLoanIdx],
+                    description: 'EMPRÉSTIMO PARA VIAGEM DE SALVADOR',
+                    amount: 395.26,
+                    category: 'Empréstimos',
+                    dueDate: '2026-09-10',
+                    installments: { current: 2, total: 3 },
+                    group: 'JADY'
+                };
+            } else {
+                data.expenses.push({
+                    id: 'jady_emprestimo_salvador_sep26',
+                    description: 'EMPRÉSTIMO PARA VIAGEM DE SALVADOR',
+                    amount: 395.26,
+                    category: 'Empréstimos',
+                    paid: false,
+                    dueDate: '2026-09-10',
+                    installments: { current: 2, total: 3 },
+                    group: 'JADY'
+                });
+            }
+
+            // Ensure Santander balance default for September 2026
+            data.bankReserves = {
+                santander: 2997.96,
+                inter: data.bankReserves?.inter || 0.00,
+                sofisa: data.bankReserves?.sofisa || 100.00
+            };
+
+            // Keep all expenses sorted alphabetically
+            data.expenses.sort((a, b) => a.description.localeCompare(b.description, 'pt-BR', { sensitivity: 'base' }));
+        }
+
+        // Explicit updates and integrity enforcement for October 2026
+        if (year === 2026 && month === 10) {
+            const canonicalOct = generateMonthData(2026, 10);
+            
+            // Build map of user paid statuses
+            const userPaidMap = new Map<string, { paid: boolean, paidAt?: string | null, userModifiedPaid?: boolean, skipped?: boolean }>();
+            [...data.expenses, ...data.avulsosItems].forEach(item => {
+                const normDesc = item.description.toUpperCase().trim();
+                userPaidMap.set(normDesc, { paid: item.paid, paidAt: item.paidAt, userModifiedPaid: item.userModifiedPaid, skipped: item.skipped });
+            });
+
+            // Clean list of canonical expenses
+            const cleanExpenses: Transaction[] = canonicalOct.expenses.map(exp => {
+                const norm = exp.description.toUpperCase().trim();
+                const userState = userPaidMap.get(norm);
+                if (userState) {
+                    return { ...exp, paid: userState.paid, paidAt: userState.paidAt, userModifiedPaid: userState.userModifiedPaid, skipped: userState.skipped };
+                }
+                return exp;
+            });
+
+            // Add any non-canonical custom expenses the user might have created
+            data.expenses.forEach(exp => {
+                const norm = exp.description.toUpperCase().trim();
+                if (!cleanExpenses.some(c => c.description.toUpperCase().trim() === norm || c.id === exp.id)) {
+                    cleanExpenses.push(exp);
                 }
             });
+
+            // Claroflex items on Iago Nubank card
+            const claroflexAndre = cleanExpenses.find(e => e.description.toUpperCase().includes('CLAROFLEX ANDRÉ') || e.description.toUpperCase().includes('CLAROFLEX ANDRE'));
+            if (!claroflexAndre) {
+                cleanExpenses.push({
+                    id: 'exp_claroflex_andre_iago_2026_10',
+                    description: 'CLAROFLEX ANDRÉ',
+                    amount: 59.90,
+                    category: 'Moradia',
+                    paid: false,
+                    dueDate: '2026-10-07',
+                    group: 'IAGO (CARTÃO NUBANK)'
+                });
+            }
+            const claroflexMarcelly = cleanExpenses.find(e => e.description.toUpperCase().includes('CLAROFLEX MARCELLY'));
+            if (!claroflexMarcelly) {
+                cleanExpenses.push({
+                    id: 'exp_claroflex_marcelly_iago_2026_10',
+                    description: 'CLAROFLEX MARCELLY',
+                    amount: 44.90,
+                    category: 'Moradia',
+                    paid: false,
+                    dueDate: '2026-10-07',
+                    group: 'IAGO (CARTÃO NUBANK)'
+                });
+            }
+
+            // Empréstimo Junho parcela 4/4
+            const loanJunho = cleanExpenses.find(e => e.description.toUpperCase().includes('EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO') || e.description.toUpperCase().includes('EMPRESTIMO PARA PAGAR AS CONTAS DE JUNHO'));
+            if (!loanJunho) {
+                cleanExpenses.push({
+                    id: 'fin_EMPRÉSTIMOPARAPAGARASCONTASDEJUNHO_4',
+                    description: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO',
+                    amount: 486.00,
+                    category: 'Empréstimos',
+                    paid: false,
+                    dueDate: '2026-10-20',
+                    installments: { current: 4, total: 4 },
+                    group: 'MARCIA BRITO'
+                });
+            }
+
+            // Ensure Jady Empréstimo Viagem Salvador parcela 3/3
+            const jadyLoan = cleanExpenses.find(e => e.description.toUpperCase().includes('VIAGEM DE SALVADOR') || (e.description.toUpperCase().includes('SALVADOR') && (e.group === 'JADY' || e.category === 'Jady')));
+            if (jadyLoan) {
+                jadyLoan.group = 'JADY';
+                jadyLoan.category = 'Empréstimos';
+                jadyLoan.amount = 395.26;
+                jadyLoan.installments = { current: 3, total: 3 };
+            } else {
+                cleanExpenses.push({
+                    id: 'fin_EMPRÉSTIMOPARAVIAGEMDESALVADOR_3',
+                    description: 'EMPRÉSTIMO PARA VIAGEM DE SALVADOR',
+                    amount: 395.26,
+                    category: 'Empréstimos',
+                    paid: false,
+                    dueDate: '2026-10-10',
+                    installments: { current: 3, total: 3 },
+                    group: 'JADY'
+                });
+            }
+
+            // Ensure Claudio Silva Empréstimo Contas de Setembro parcela 1/5 (R$ 300,00)
+            const claudioLoan = cleanExpenses.find(e => e.description.toUpperCase().includes('CONTAS DE SETEMBRO'));
+            if (claudioLoan) {
+                claudioLoan.description = 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO';
+                claudioLoan.group = 'CLAUDIO SILVA';
+                claudioLoan.category = 'Empréstimos';
+                claudioLoan.amount = 300.00;
+                claudioLoan.installments = { current: 1, total: 5 };
+            } else {
+                cleanExpenses.push({
+                    id: 'fin_EMPRÉSTIMOPARAPAGARASCONTASDESETEMBRO_1',
+                    description: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO',
+                    amount: 300.00,
+                    category: 'Empréstimos',
+                    paid: false,
+                    dueDate: '2026-10-15',
+                    installments: { current: 1, total: 5 },
+                    group: 'CLAUDIO SILVA'
+                });
+            }
+
+            // Ensure EMPRÉSTIMO COM LILI is frozen (congelado / skipped) for October 2026
+            const liliLoan = cleanExpenses.find(e => e.description.toUpperCase().includes('EMPRÉSTIMO COM LILI') || e.description.toUpperCase().includes('EMPRESTIMO COM LILI'));
+            if (liliLoan) {
+                liliLoan.skipped = true;
+                liliLoan.amount = 800.00;
+                liliLoan.group = 'LILI TORRES';
+            } else {
+                cleanExpenses.push({
+                    id: 'fin_EMPRÉSTIMOCOMLILI_oct26_frozen',
+                    description: 'EMPRÉSTIMO COM LILI',
+                    amount: 800.00,
+                    category: 'Empréstimos',
+                    paid: false,
+                    skipped: true,
+                    dueDate: '2026-10-04',
+                    installments: { current: 3, total: 5 },
+                    group: 'LILI TORRES'
+                });
+            }
+
+            data.expenses = cleanExpenses;
+
+            // Incomes for October 2026
+            data.incomes = canonicalOct.incomes.map(inc => {
+                const norm = inc.description.toUpperCase().trim();
+                const userState = userPaidMap.get(norm);
+                if (userState) {
+                    return { ...inc, paid: userState.paid, paidAt: userState.paidAt, userModifiedPaid: userState.userModifiedPaid };
+                }
+                return inc;
+            });
+
+            // Bank reserves default for October 2026
+            if (!data.bankReserves || data.bankReserves.santander === undefined) {
+                data.bankReserves = {
+                    santander: 0.00,
+                    inter: 0.00,
+                    sofisa: 100.00
+                };
+            }
+
+            data.expenses.sort((a, b) => a.description.localeCompare(b.description, 'pt-BR', { sensitivity: 'base' }));
         }
 
         // SYSTEM RULES: Apply these regardless of whether the user has modified data
         
+        // Filter out any "CONTAS DE SETEMBRO" belonging to MARCIA BISPO anywhere in the application
+        if (data.expenses) {
+            data.expenses = data.expenses.filter(e => {
+                const desc = e.description.toUpperCase();
+                const grp = (e.group || '').toUpperCase();
+                if (desc.includes('CONTAS DE SETEMBRO') && (desc.includes('MARCIA') || grp.includes('MARCIA') || desc.includes('BISPO') || grp.includes('BISPO'))) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        // Ensure Claudio Silva Empréstimo Contas de Setembro (3 installments: Oct 300, Nov 300, Dec 400)
+        if (year === 2026 && (month === 10 || month === 11 || month === 12)) {
+            const current = month - 10 + 1; // 10 -> 1, 11 -> 2, 12 -> 3
+            const total = 3;
+            const amount = month === 12 ? 400.00 : 300.00;
+            const claudioLoan = data.expenses.find(e => e.description.toUpperCase().includes('CONTAS DE SETEMBRO') && e.group === 'CLAUDIO SILVA');
+            if (claudioLoan) {
+                claudioLoan.description = 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO';
+                claudioLoan.group = 'CLAUDIO SILVA';
+                claudioLoan.category = 'Empréstimos';
+                claudioLoan.amount = amount;
+                claudioLoan.installments = { current, total };
+            } else {
+                data.expenses.push({
+                    id: `fin_EMPRÉSTIMOPARAPAGARASCONTASDESETEMBRO_${current}`,
+                    description: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO',
+                    amount: amount,
+                    category: 'Empréstimos',
+                    paid: false,
+                    dueDate: `2026-${month.toString().padStart(2, '0')}-15`,
+                    installments: { current, total },
+                    group: 'CLAUDIO SILVA'
+                });
+            }
+        } else {
+            data.expenses = data.expenses.filter(e => !(e.description.toUpperCase().includes('CONTAS DE SETEMBRO') && e.group === 'CLAUDIO SILVA'));
+        }
+
+        // Ensure Jady Empréstimo Contas de Setembro (R$ 400,00, installments 1 to 5) starting Oct 2026
+        if ((year === 2026 && month >= 10) || year > 2026) {
+            const diff = (year - 2026) * 12 + (month - 10);
+            const current = diff + 1;
+            const total = 5;
+            if (current >= 1 && current <= total) {
+                const jadyLoan = data.expenses.find(e => e.description.toUpperCase().includes('CONTAS DE SETEMBRO') && e.group === 'JADY');
+                if (jadyLoan) {
+                    jadyLoan.description = 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO';
+                    jadyLoan.group = 'JADY';
+                    jadyLoan.category = 'Empréstimos';
+                    jadyLoan.amount = 400.00;
+                    jadyLoan.installments = { current, total };
+                } else {
+                    data.expenses.push({
+                        id: `fin_JADY_EMPRÉSTIMOPARAPAGARASCONTASDESETEMBRO_${current}`,
+                        description: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO',
+                        amount: 400.00,
+                        category: 'Empréstimos',
+                        paid: false,
+                        dueDate: `${year}-${month.toString().padStart(2, '0')}-10`,
+                        installments: { current, total },
+                        group: 'JADY'
+                    });
+                }
+            } else {
+                data.expenses = data.expenses.filter(e => !(e.description.toUpperCase().includes('CONTAS DE SETEMBRO') && e.group === 'JADY'));
+            }
+        }
+
+        // Ensure Lili Torres Empréstimo Viagem Nordeste is exactly R$ 335,90 and correctly sequenced from Oct 2026 onwards
+        if ((year === 2026 && month >= 8) || year > 2026) {
+            const diff = (year - 2026) * 12 + (month - 8);
+            const current = diff + 1;
+            const total = 6;
+            if (current >= 1 && current <= total) {
+                const liliNordeste = data.expenses.find(e => e.description.toUpperCase().includes('NORDESTE') && (e.group === 'LILI TORRES' || e.description.toUpperCase().includes('LILI')));
+                if (liliNordeste) {
+                    liliNordeste.description = 'EMPRÉSTIMO VIAGEM NORDESTE (LILI)';
+                    liliNordeste.group = 'LILI TORRES';
+                    liliNordeste.category = 'Empréstimos';
+                    liliNordeste.amount = 335.90;
+                    liliNordeste.installments = { current, total };
+                } else {
+                    data.expenses.push({
+                        id: `fin_EMPRÉSTIMOVIAGEMNORDESTELILI_${current}`,
+                        description: 'EMPRÉSTIMO VIAGEM NORDESTE (LILI)',
+                        amount: 335.90,
+                        category: 'Empréstimos',
+                        paid: false,
+                        dueDate: `${year}-${month.toString().padStart(2, '0')}-04`,
+                        installments: { current, total },
+                        group: 'LILI TORRES'
+                    });
+                }
+            } else {
+                data.expenses = data.expenses.filter(e => !(e.description.toUpperCase().includes('NORDESTE') && e.group === 'LILI TORRES'));
+            }
+        }
+
+        // Ensure EMPRÉSTIMO COM LILI is correctly sequenced for November and December 2026
+        if (year === 2026 && month === 11) {
+            const liliLoanNov = data.expenses.find(e => e.description.toUpperCase().includes('EMPRÉSTIMO COM LILI') || e.description.toUpperCase().includes('EMPRESTIMO COM LILI'));
+            if (liliLoanNov) {
+                liliLoanNov.amount = 800.00;
+                liliLoanNov.installments = { current: 4, total: 5 };
+                liliLoanNov.group = 'LILI TORRES';
+                liliLoanNov.category = 'Empréstimos';
+                liliLoanNov.skipped = false;
+            } else {
+                data.expenses.push({
+                    id: 'fin_EMPRÉSTIMOCOMLILI_nov26_4_5',
+                    description: 'EMPRÉSTIMO COM LILI',
+                    amount: 800.00,
+                    category: 'Empréstimos',
+                    paid: false,
+                    dueDate: '2026-11-04',
+                    installments: { current: 4, total: 5 },
+                    group: 'LILI TORRES'
+                });
+            }
+        }
+
+        if (year === 2026 && month === 12) {
+            const liliLoanDec = data.expenses.find(e => e.description.toUpperCase().includes('EMPRÉSTIMO COM LILI') || e.description.toUpperCase().includes('EMPRESTIMO COM LILI'));
+            if (liliLoanDec) {
+                liliLoanDec.amount = 800.00;
+                liliLoanDec.installments = { current: 5, total: 5 };
+                liliLoanDec.group = 'LILI TORRES';
+                liliLoanDec.category = 'Empréstimos';
+                liliLoanDec.skipped = false;
+            } else {
+                data.expenses.push({
+                    id: 'fin_EMPRÉSTIMOCOMLILI_dec26_5_5',
+                    description: 'EMPRÉSTIMO COM LILI',
+                    amount: 800.00,
+                    category: 'Empréstimos',
+                    paid: false,
+                    dueDate: '2026-12-04',
+                    installments: { current: 5, total: 5 },
+                    group: 'LILI TORRES'
+                });
+            }
+        }
+
         // 1. Update Andre's Salary for Sept 2026 onwards
         if ((year === 2026 && month >= 9) || year > 2026) {
             data.incomes = data.incomes.map(i => {
@@ -1858,6 +1993,47 @@ const App: React.FC = () => {
              });
         }
 
+        // Universal Preservation: Ensure no user toggles (paid, paidAt, skipped, isSuspended, suspendedUntil, userModifiedPaid) are ever lost
+        const applyFinalPreservation = (t: Transaction): Transaction => {
+            const p = getPreservedState(t);
+            if (!p) return t;
+            return {
+                ...t,
+                paid: p.paid !== undefined ? p.paid : t.paid,
+                paidAt: p.paid !== undefined ? p.paidAt : t.paidAt,
+                skipped: p.skipped !== undefined ? p.skipped : t.skipped,
+                isSuspended: p.isSuspended !== undefined ? p.isSuspended : t.isSuspended,
+                suspendedUntil: p.suspendedUntil !== undefined ? p.suspendedUntil : t.suspendedUntil,
+                userModifiedPaid: p.userModifiedPaid !== undefined ? p.userModifiedPaid : t.userModifiedPaid
+            };
+        };
+
+        data.expenses = data.expenses.map(applyFinalPreservation);
+        data.avulsosItems = data.avulsosItems.map(applyFinalPreservation);
+        data.incomes = data.incomes.map(applyFinalPreservation);
+
+        // Global deduplication to remove duplicate Iago items caused by trailing "(IAGO)"
+        data.expenses = data.expenses.map(e => {
+            if (e.description.endsWith(' (IAGO)')) {
+                return { ...e, description: e.description.replace(' (IAGO)', '') };
+            }
+            return e;
+        });
+        
+        const uniqueExpensesMap = new Map();
+        data.expenses.forEach(e => {
+            const key = `${e.description.toUpperCase().trim()}_${e.amount}`;
+            if (!uniqueExpensesMap.has(key)) {
+                uniqueExpensesMap.set(key, e);
+            } else {
+                const existing = uniqueExpensesMap.get(key);
+                if (!existing.paid && e.paid) {
+                    uniqueExpensesMap.set(key, e);
+                }
+            }
+        });
+        data.expenses = Array.from(uniqueExpensesMap.values());
+
         // Final sort to ensure all programmatically added items are alphabetically ordered
         data.expenses = [...data.expenses].sort((a, b) => 
             a.description.localeCompare(b.description, 'pt-BR', { sensitivity: 'base' })
@@ -1910,13 +2086,20 @@ const App: React.FC = () => {
             if (snapshot.exists()) {
                 let cloudData = snapshot.data() as MonthData;
                 const localData = monthDataRef.current;
+                const rawCloudStr = JSON.stringify(snapshot.data());
 
                 cloudData = ensureSystemIntegrity(cloudData, year, month);
+                const cleanCloudStr = JSON.stringify(cloudData);
 
                 // Only update if cloud data is newer
-                if (!localData || cloudData.updatedAt > localData.updatedAt) {
+                if (!localData || cloudData.updatedAt >= (localData.updatedAt || 0)) {
                     setMonthData(cloudData);
-                    try { localStorage.setItem(getStorageKey(year, month), JSON.stringify(cloudData)); } catch (e) { console.warn("LocalStorage Quota Exceeded:", e); }
+                    try { localStorage.setItem(getStorageKey(year, month), cleanCloudStr); } catch (e) { console.warn("LocalStorage Quota Exceeded:", e); }
+                    if (rawCloudStr !== cleanCloudStr) {
+                        setDoc(docRef, JSON.parse(cleanCloudStr))
+                            .then(() => setSyncStatus('online'))
+                            .catch(e => handleFirestoreError(e, OperationType.WRITE, path));
+                    }
                 } else if (localData && localData.updatedAt > cloudData.updatedAt) {
                     // Local data is newer than Firestore! Push local to cloud!
                     setDoc(docRef, JSON.parse(JSON.stringify(localData)))
@@ -1991,28 +2174,46 @@ const App: React.FC = () => {
         }
     };
 
-    const handleTogglePaid = (id: string, paid: boolean, type: TransactionType) => {
+    const handleTogglePaid = (id: string, paid: boolean, type?: TransactionType) => {
         if (!monthData) return;
         const newData = { ...monthData };
         
         let amountDiff = 0;
-        newData[type] = newData[type].map(t => {
-            if (t.id === id) {
-                if (t.paid !== paid) {
-                    amountDiff = t.amount;
+        let foundType: TransactionType = type || 'expenses';
+
+        const checkAndUpdate = (listKey: TransactionType) => {
+            let changed = false;
+            newData[listKey] = (newData[listKey] || []).map(t => {
+                if (t.id === id) {
+                    if (t.paid !== paid) {
+                        amountDiff = t.amount;
+                    }
+                    changed = true;
+                    foundType = listKey;
+                    return { ...t, paid, paidAt: paid ? (t.paidAt || new Date().toISOString()) : null, userModifiedPaid: true };
                 }
-                return { ...t, paid, paidAt: paid ? new Date().toISOString() : null, userModifiedPaid: true };
+                return t;
+            });
+            return changed;
+        };
+
+        if (type && checkAndUpdate(type)) {
+            // Updated in preferred list
+        } else {
+            if (!checkAndUpdate('expenses')) {
+                if (!checkAndUpdate('avulsosItems')) {
+                    checkAndUpdate('incomes');
+                }
             }
-            return t;
-        });
+        }
 
         // Modify Santander balance!
         if (amountDiff !== 0) {
             const currentSantander = newData.bankReserves?.santander ?? 0;
             let newSantander = currentSantander;
-            if (type === 'expenses' || type === 'avulsosItems') {
+            if (foundType === 'expenses' || foundType === 'avulsosItems') {
                 newSantander = paid ? (currentSantander - amountDiff) : (currentSantander + amountDiff);
-            } else if (type === 'incomes') {
+            } else if (foundType === 'incomes') {
                 newSantander = paid ? (currentSantander + amountDiff) : (currentSantander - amountDiff);
             }
             
@@ -2038,7 +2239,10 @@ const App: React.FC = () => {
             }
         });
         
-        newData.expenses = newData.expenses.map(e => itemIds.has(e.id) ? { ...e, paid: !allPaid, paidAt: !allPaid ? new Date().toISOString() : null, userModifiedPaid: true } : e);
+        const updateItem = (e: Transaction) => itemIds.has(e.id) ? { ...e, paid: !allPaid, paidAt: !allPaid ? (e.paidAt || new Date().toISOString()) : null, userModifiedPaid: true } : e;
+
+        newData.expenses = (newData.expenses || []).map(updateItem);
+        newData.avulsosItems = (newData.avulsosItems || []).map(updateItem);
         
         // Update Santander balance!
         const currentSantander = newData.bankReserves?.santander ?? 0;
@@ -2213,9 +2417,20 @@ const App: React.FC = () => {
         return (bankReserves.santander ?? 0) + (bankReserves.inter ?? 0) + (bankReserves.sofisa ?? 0);
     }, [bankReserves]);
 
+    // O valor que fica girando para pagar as contas é o Santander (R$ 2997,96).
+    // Sofisa é poupança protegida e não entra na conta de pagar coisas.
+    const santanderGiro = bankReserves.santander ?? 0;
+
+    // 5º item: O quanto to precisando para acabar de pagar = diferença do Santander para as contas não pagas
+    const precisoParaQuitar = useMemo(() => {
+        const diff = stats.realExpenses.unpaid - santanderGiro;
+        return diff > 0 ? diff : 0;
+    }, [stats.realExpenses.unpaid, santanderGiro]);
+
+    // 6º item: Sobra Real = Santander - Contas Não Pagas (azul se >= 0, vermelho se < 0)
     const sobraReal = useMemo(() => {
-        return latestDailyBalance - stats.realExpenses.unpaid;
-    }, [latestDailyBalance, stats.realExpenses.unpaid]);
+        return santanderGiro - stats.realExpenses.unpaid;
+    }, [santanderGiro, stats.realExpenses.unpaid]);
 
     // Group Debts by Person
     const groupedDebts = useMemo(() => {
@@ -2247,12 +2462,12 @@ const App: React.FC = () => {
         if (name.includes('MORADIA')) return 'from-red-600 to-red-700';
         if (name.includes('MARCIA BRITO')) return 'from-orange-500 to-orange-600';
         if (name.includes('MARCIA BISPO')) return 'from-amber-500 to-amber-600';
+        if (name.includes('CLAUDIO SILVA') || name.includes('CLÁUDIO SILVA') || name.includes('CLAUDIO') || name.includes('CLÁUDIO')) return 'from-purple-600 to-indigo-700';
         if (name.includes('LILI')) return 'from-yellow-400 to-yellow-500';
         if (name.includes('REBECCA')) return 'from-emerald-500 to-emerald-600';
         if (name.includes('IAGO')) return 'from-emerald-800 to-emerald-950';
         if (name.includes('JADY')) return 'from-blue-800 to-indigo-950';
         if (name.includes('DÍVIDAS NA RUA') || name.includes('DIVIDAS NA RUA')) return 'from-sky-400 to-sky-600';
-        if (name.includes('CLAUDIO')) return 'from-teal-600 to-teal-800';
         return 'from-slate-700 to-slate-900';
     };
 
@@ -2276,24 +2491,24 @@ const App: React.FC = () => {
             <nav className="fixed bottom-0 left-0 right-0 h-16 lg:h-20 bg-white/95 backdrop-blur-xl border-t border-slate-100 flex items-center justify-around px-4 lg:px-8 z-[100] shadow-[0_-8px_30px_rgb(0,0,0,0.04)] max-w-lg mx-auto md:max-w-none">
                 <button 
                     onClick={() => { setView('home'); setActiveTab('overview'); }}
-                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-6 py-2 rounded-2xl transition-all font-black ${view === 'home' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
+                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-6 py-2 rounded-2xl transition-all font-black ${view === 'home' ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-600/20' : 'text-slate-400 hover:bg-slate-50'}`}
                 >
                     <HomeIcon size={20} className="lg:w-5 lg:h-5" />
                     <span className="text-[10px] lg:text-sm uppercase tracking-wider">Visão</span>
                 </button>
                 <button 
-                    onClick={() => { setView('savings'); }}
-                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-6 py-2 rounded-2xl transition-all font-black ${view === 'savings' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
-                >
-                    <PiggyBank size={20} className="lg:w-5 lg:h-5" />
-                    <span className="text-[10px] lg:text-sm uppercase tracking-wider">Poupar</span>
-                </button>
-                <button 
                     onClick={() => { setView('transactions'); }}
-                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-6 py-2 rounded-2xl transition-all font-black ${view === 'transactions' ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20' : 'text-slate-400 hover:bg-slate-50'}`}
+                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-6 py-2 rounded-2xl transition-all font-black ${view === 'transactions' ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-600/20' : 'text-slate-400 hover:bg-slate-50'}`}
                 >
                     <ShoppingBag size={20} className="lg:w-5 lg:h-5" />
                     <span className="text-[10px] lg:text-sm uppercase tracking-wider">Extrato</span>
+                </button>
+                <button 
+                    onClick={() => { setView('savings'); }}
+                    className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-2 px-6 py-2 rounded-2xl transition-all font-black ${view === 'savings' ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-600/20' : 'text-slate-400 hover:bg-slate-50'}`}
+                >
+                    <PiggyBank size={20} className="lg:w-5 lg:h-5" />
+                    <span className="text-[10px] lg:text-sm uppercase tracking-wider">Poupar</span>
                 </button>
             </nav>
 
@@ -2387,204 +2602,279 @@ const App: React.FC = () => {
 
                                 {activeTab === 'overview' && (
                                     <>
-                                        {/* BALANCE OVERVIEW CARD */}
-                                        <div className={`${sobraReal < 0 ? 'bg-gradient-to-br from-rose-500 to-red-600' : 'bg-gradient-to-br from-teal-500 to-emerald-600'} rounded-3xl lg:rounded-[2.5rem] p-4 lg:p-8 text-white shadow-2xl shadow-emerald-200 border border-white/20 mb-6 lg:mb-8 relative overflow-hidden group`}>
-                                            <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-emerald-400/20 blur-[80px] rounded-full"></div>
-                                            <div className="absolute bottom-[-10%] left-[-5%] w-48 h-48 bg-emerald-400/20 blur-[60px] rounded-full"></div>
+                                        {/* BALANCE OVERVIEW CARD - SAÚDE FINANCEIRA */}
+                                        <div className="bg-slate-900 rounded-3xl lg:rounded-[2.5rem] p-4 lg:p-7 text-white shadow-2xl shadow-slate-950/30 border border-slate-800 mb-6 lg:mb-8 relative overflow-hidden group">
+                                            <div className={`absolute -top-24 -right-24 w-80 h-80 ${sobraReal >= 0 ? 'bg-sky-500/10' : 'bg-rose-500/10'} blur-[100px] rounded-full pointer-events-none`}></div>
+                                            <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none"></div>
                                             
                                             <div className="relative z-10">
-                                                <div className="flex items-center gap-2 lg:gap-3 mb-4 lg:mb-6">
-                                                    <div className="p-2 lg:p-2.5 bg-emerald-400/30 backdrop-blur-md text-white rounded-xl lg:rounded-2xl shadow-lg border border-white/20">
-                                                        <TrendingUp size={18} className="lg:w-6 lg:h-6" strokeWidth={3} />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <h3 className="text-sm lg:text-lg font-black tracking-tight">Saúde Financeira</h3>
-                                                        <div className="flex items-center gap-1.5 lg:gap-2">
-                                                            <div className="w-1 h-1 lg:w-1.5 lg:h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                                                            <span className="text-[10px] lg:text-sm font-black opacity-90 uppercase tracking-widest leading-none">
-                                                                {sobraReal < 0 ? 'ALERTA: CAIXA EM DIA NEGATIVO • ' : 'SALDO ATIVO EM DIA • '}
-                                                                {Math.round((sobraReal / (latestDailyBalance || 1)) * 100)}% de sobra real/atual
-                                                            </span>
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 lg:mb-6 pb-4 border-b border-white/10">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-3 bg-white/10 backdrop-blur-md text-white rounded-2xl border border-white/10 shadow-inner">
+                                                            <TrendingUp size={24} className="text-emerald-400" strokeWidth={3} />
                                                         </div>
+                                                        <div className="flex flex-col">
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="text-xl lg:text-3xl font-black tracking-tight text-white">Saúde Financeira</h3>
+                                                                <span className="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-white/10 text-slate-200 border border-white/10">
+                                                                    Fluxo Real
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs sm:text-sm font-bold text-slate-300 mt-1">
+                                                                Giro no Santander: <strong className="text-emerald-400 font-black">{formatCurrency(bankReserves.santander)}</strong> • Poupança Sofisa: <strong className="text-teal-300 font-black">{formatCurrency(bankReserves.sofisa)}</strong> (protegida)
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                                                        <span className={`text-xs sm:text-sm font-black uppercase tracking-wider px-3.5 py-1.5 rounded-xl border shadow-sm ${
+                                                            sobraReal >= 0 
+                                                                ? 'bg-sky-500/20 border-sky-400/40 text-sky-200' 
+                                                                : 'bg-rose-500/20 border-rose-400/40 text-rose-200'
+                                                        }`}>
+                                                            {sobraReal >= 0 ? '✓ Sobra Real Positiva' : '⚠️ Déficit em Conta'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 lg:gap-4 xl:gap-6">
+                                                {/* 6 ITENS DA SAÚDE FINANCEIRA */}
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 lg:gap-4">
+                                                    {/* 1º ITEM EM VERDE: Entradas (Soma dos Salários) */}
                                                     <div 
                                                         onClick={() => {
                                                             setView('transactions');
                                                             setTransactionListType('incomes');
                                                         }}
-                                                        className="flex flex-col gap-0.5 lg:gap-1 cursor-pointer hover:bg-white/10 p-1.5 lg:p-2 rounded-xl lg:rounded-2xl transition-all group/stat col-span-1"
+                                                        className="bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-500/40 rounded-2xl p-4 flex flex-col justify-between transition-all cursor-pointer group/stat shadow-md"
                                                     >
-                                                        <span className="text-[9px] lg:text-sm font-black uppercase tracking-widest opacity-80 group-hover/stat:opacity-100 flex items-center gap-1 flex-wrap">
-                                                            Receitas (Entradas)
-                                                            <ArrowRight size={10} className="lg:w-3.5 lg:h-3.5 opacity-0 group-hover/stat:opacity-100 transition-all -translate-x-2 group-hover/stat:translate-x-0" />
-                                                        </span>
-                                                        <div className="flex items-baseline gap-1">
-                                                            <span className="text-base lg:text-2xl font-black tracking-tighter">
+                                                        <div className="flex items-center justify-between gap-1 mb-1.5">
+                                                            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                                                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0 shadow-sm"></span>
+                                                                1. Entradas (Salários)
+                                                            </span>
+                                                            <ArrowRight size={14} className="text-emerald-400 opacity-0 group-hover/stat:opacity-100 transition-all -translate-x-1 group-hover/stat:translate-x-0" />
+                                                        </div>
+                                                        <div className="my-1.5">
+                                                            <span className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-sm">
                                                                 {formatCurrency(stats.combined.total)}
                                                             </span>
                                                         </div>
-                                                        <div className="flex items-center gap-1.5 lg:gap-2 mt-0.5">
-                                                            <div className="flex-1 bg-white/10 h-1 rounded-full overflow-hidden">
-                                                                <div 
-                                                                    className={`h-full rounded-full ${sobraReal < 0 ? 'bg-red-200' : 'bg-white'}`} 
-                                                                    style={{ width: `${Math.min(100, (stats.realExpenses.total / (stats.combined.total || 1)) * 100)}%` }}
-                                                                ></div>
-                                                            </div>
-                                                            <span className="text-[8px] lg:text-[10px] font-black uppercase tracking-widest leading-none shrink-0">{Math.round((stats.realExpenses.total / (stats.combined.total || 1)) * 100)}%</span>
+                                                        <div className="pt-2.5 border-t border-emerald-500/25 text-xs font-bold text-emerald-200/80 flex items-center justify-between">
+                                                            <span>Soma salários</span>
+                                                            <span className="text-emerald-300 font-black uppercase text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">Congelado</span>
                                                         </div>
                                                     </div>
 
-                                                    <div 
-                                                        onClick={() => {
-                                                            const trackerElement = document.getElementById('daily-balance-tracker-widget');
-                                                            if (trackerElement) {
-                                                                trackerElement.scrollIntoView({ behavior: 'smooth' });
-                                                            }
-                                                        }}
-                                                        className="flex flex-col gap-0.5 lg:gap-1 cursor-pointer hover:bg-white/10 p-1.5 lg:p-2 rounded-xl lg:rounded-2xl transition-all group/stat col-span-1"
-                                                    >
-                                                        <span className="text-[9px] lg:text-sm font-black uppercase tracking-widest opacity-80 group-hover/stat:opacity-100 flex items-center gap-1 text-emerald-100 flex-wrap">
-                                                            Receita Real (Contas)
-                                                            <ArrowRight size={10} className="lg:w-3.5 lg:h-3.5 opacity-0 group-hover/stat:opacity-100 transition-all -translate-x-2 group-hover/stat:translate-x-0" />
-                                                        </span>
-                                                        <div className="flex items-baseline gap-1">
-                                                            <span className="text-base lg:text-2xl font-black tracking-tighter text-white">
-                                                                {formatCurrency(latestDailyBalance)}
-                                                            </span>
-                                                        </div>
-                                                        <div className="text-[8px] lg:text-[10px] font-black uppercase text-emerald-200/80 tracking-widest leading-none mt-1">
-                                                            Saldos em Conta (Hoje)
-                                                        </div>
-                                                    </div>
-
+                                                    {/* 2º ITEM EM VERMELHO: As Despesas */}
                                                     <div 
                                                         onClick={() => {
                                                             setView('transactions');
                                                             setTransactionListType('expenses');
                                                         }}
-                                                        className="flex flex-col gap-0.5 lg:gap-1 cursor-pointer hover:bg-white/10 p-1.5 lg:p-2 rounded-xl lg:rounded-2xl transition-all group/stat col-span-2 lg:col-span-1"
+                                                        className="bg-rose-950/50 hover:bg-rose-900/60 border border-rose-500/40 rounded-2xl p-4 flex flex-col justify-between transition-all cursor-pointer group/stat shadow-md"
                                                     >
-                                                        <span className="text-[9px] lg:text-sm font-black uppercase tracking-widest opacity-80 group-hover/stat:opacity-100 flex items-center gap-1 flex-wrap">
-                                                            Despesas
-                                                            <ArrowRight size={10} className="lg:w-3.5 lg:h-3.5 opacity-0 group-hover/stat:opacity-100 transition-all -translate-x-2 group-hover/stat:translate-x-0" />
-                                                        </span>
-                                                        <div className="flex items-baseline gap-1">
-                                                            <span className="text-base lg:text-2xl font-black tracking-tighter text-emerald-100">
+                                                        <div className="flex items-center justify-between gap-1 mb-1.5">
+                                                            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-rose-300 flex items-center gap-1.5">
+                                                                <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0 shadow-sm"></span>
+                                                                2. Despesas
+                                                            </span>
+                                                            <ArrowRight size={14} className="text-rose-400 opacity-0 group-hover/stat:opacity-100 transition-all -translate-x-1 group-hover/stat:translate-x-0" />
+                                                        </div>
+                                                        <div className="my-1.5">
+                                                            <span className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-sm">
                                                                 {formatCurrency(stats.realExpenses.total)}
                                                             </span>
                                                         </div>
-                                                        <div className="flex items-center gap-1.5 lg:gap-2 mt-0.5">
-                                                            <div className="flex-1 bg-white/10 h-1 rounded-full overflow-hidden">
-                                                                <div className="h-full bg-emerald-200 rounded-full" style={{ width: `${Math.min(100, (stats.realExpenses.total / (stats.combined.total || 1)) * 100)}%` }}></div>
-                                                            </div>
-                                                            <span className="text-[8px] lg:text-[10px] font-black uppercase tracking-widest leading-none shrink-0">
-                                                                {Math.round((stats.realExpenses.total / (stats.combined.total || 1)) * 100)}%
+                                                        <div className="pt-2.5 border-t border-rose-500/25 text-xs font-bold text-rose-200/80 flex items-center justify-between">
+                                                            <span>Total de contas</span>
+                                                            <span className="text-rose-300 font-black">{Math.round((stats.realExpenses.total / (stats.combined.total || 1)) * 100)}% da renda</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 3º ITEM EM AZUL: Contas que já paguei */}
+                                                    <div 
+                                                        onClick={() => {
+                                                            setView('transactions');
+                                                            setTransactionListType('expenses');
+                                                        }}
+                                                        className="bg-sky-950/50 hover:bg-sky-900/60 border border-sky-500/40 rounded-2xl p-4 flex flex-col justify-between transition-all cursor-pointer group/stat shadow-md"
+                                                    >
+                                                        <div className="flex items-center justify-between gap-1 mb-1.5">
+                                                            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-sky-300 flex items-center gap-1.5">
+                                                                <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shrink-0 shadow-sm"></span>
+                                                                3. Já Paguei
+                                                            </span>
+                                                            <ArrowRight size={14} className="text-sky-400 opacity-0 group-hover/stat:opacity-100 transition-all -translate-x-1 group-hover/stat:translate-x-0" />
+                                                        </div>
+                                                        <div className="my-1.5">
+                                                            <span className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-sm">
+                                                                {formatCurrency(stats.realExpenses.paid)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="pt-2.5 border-t border-sky-500/25 text-xs font-bold text-sky-200/80 flex items-center justify-between">
+                                                            <span>Contas quitadas</span>
+                                                            <span className="text-sky-300 font-black">{stats.realExpenses.total > 0 ? Math.round((stats.realExpenses.paid / stats.realExpenses.total) * 100) : 0}% pagas</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 4º ITEM EM VERMELHO: Contas que ainda não paguei */}
+                                                    <div 
+                                                        onClick={() => {
+                                                            setView('transactions');
+                                                            setTransactionListType('expenses');
+                                                        }}
+                                                        className="bg-rose-950/50 hover:bg-rose-900/60 border border-rose-500/40 rounded-2xl p-4 flex flex-col justify-between transition-all cursor-pointer group/stat shadow-md"
+                                                    >
+                                                        <div className="flex items-center justify-between gap-1 mb-1.5">
+                                                            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-rose-300 flex items-center gap-1.5">
+                                                                <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0 shadow-sm"></span>
+                                                                4. Não Paguei
+                                                            </span>
+                                                            <ArrowRight size={14} className="text-rose-400 opacity-0 group-hover/stat:opacity-100 transition-all -translate-x-1 group-hover/stat:translate-x-0" />
+                                                        </div>
+                                                        <div className="my-1.5">
+                                                            <span className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-sm">
+                                                                {formatCurrency(stats.realExpenses.unpaid)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="pt-2.5 border-t border-rose-500/25 text-xs font-bold text-rose-200/80 flex items-center justify-between">
+                                                            <span>Contas pendentes</span>
+                                                            <span className="text-rose-300 font-black">{stats.realExpenses.total > 0 ? Math.round((stats.realExpenses.unpaid / stats.realExpenses.total) * 100) : 0}% pendente</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 5º ITEM: O quanto to precisando para acabar de pagar */}
+                                                    <div 
+                                                        className="bg-slate-800/95 border border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-md"
+                                                    >
+                                                        <div className="flex items-center justify-between gap-1 mb-1.5">
+                                                            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                                                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0 shadow-sm"></span>
+                                                                5. Preciso p/ Quitar
+                                                            </span>
+                                                        </div>
+                                                        <div className="my-1.5">
+                                                            <span className={`text-2xl sm:text-3xl font-black tracking-tight drop-shadow-sm ${precisoParaQuitar > 0 ? 'text-amber-300' : 'text-emerald-400'}`}>
+                                                                {formatCurrency(precisoParaQuitar)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="pt-2.5 border-t border-white/10 text-xs font-bold text-slate-300 flex items-center justify-between">
+                                                            <span>Santander vs Pendentes</span>
+                                                            <span className={`font-black ${precisoParaQuitar > 0 ? 'text-amber-300' : 'text-emerald-400'}`}>
+                                                                {precisoParaQuitar > 0 ? 'Faltando' : 'Coberto'}
                                                             </span>
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex flex-col gap-0.5 lg:gap-1 p-1.5 lg:p-2 rounded-xl lg:rounded-2xl border border-white/10 bg-white/5 col-span-1">
-                                                        <span className="text-[9px] lg:text-sm font-black uppercase tracking-widest opacity-85 text-white">Sobra Ideal</span>
-                                                        <div className="flex items-baseline gap-1">
-                                                            <span className="text-base lg:text-2xl font-black tracking-tighter text-white">
-                                                                {formatCurrency(stats.surplusRaw)}
+                                                    {/* 6º ITEM: Sobra Real (Azul se >= 0, Vermelho se < 0) */}
+                                                    <div 
+                                                        className={`rounded-2xl p-4 flex flex-col justify-between shadow-md border transition-all ${
+                                                            sobraReal >= 0 
+                                                                ? 'bg-sky-950/50 border-sky-500/40' 
+                                                                : 'bg-rose-950/50 border-rose-500/40'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center justify-between gap-1 mb-1.5">
+                                                            <span className={`text-xs sm:text-sm font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                                                                sobraReal >= 0 ? 'text-sky-300' : 'text-rose-300'
+                                                            }`}>
+                                                                <span className={`w-2.5 h-2.5 rounded-full shrink-0 shadow-sm ${sobraReal >= 0 ? 'bg-sky-400' : 'bg-rose-400'}`}></span>
+                                                                6. Sobra Real
+                                                            </span>
+                                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+                                                                sobraReal >= 0 ? 'bg-sky-500/25 text-sky-200 border border-sky-500/30' : 'bg-rose-500/25 text-rose-200 border border-rose-500/30'
+                                                            }`}>
+                                                                {sobraReal >= 0 ? '> 0' : '< 0'}
                                                             </span>
                                                         </div>
-                                                        <div className="text-[8px] lg:text-[10px] font-black uppercase tracking-widest leading-none text-slate-100 opacity-80 mt-1 whitespace-nowrap">
-                                                            Planejada (Simulação)
-                                                        </div>
-                                                    </div>
-
-                                                    <div className={`col-span-1 ${sobraReal < 0 ? 'bg-red-400/20 border-red-300' : 'bg-emerald-400/20 border-emerald-300'} backdrop-blur-md rounded-xl lg:rounded-2xl p-2.5 lg:p-4 border flex flex-col gap-0.5 shadow-inner transition-all hover:bg-emerald-400/30 text-white`}>
-                                                        <span className="text-[9px] lg:text-sm font-black uppercase tracking-widest opacity-95 text-white">Sobra Real</span>
-                                                        <div className="flex items-baseline gap-1">
-                                                            <span className="text-base lg:text-2xl font-black tracking-tighter text-white">
+                                                        <div className="my-1.5">
+                                                            <span className={`text-2xl sm:text-3xl font-black tracking-tight drop-shadow-sm ${
+                                                                sobraReal >= 0 ? 'text-sky-300' : 'text-rose-300'
+                                                            }`}>
                                                                 {formatCurrency(sobraReal)}
                                                             </span>
                                                         </div>
-                                                        <div className={`text-[8px] lg:text-[10px] font-black uppercase tracking-widest leading-none mt-1 ${sobraReal < 0 ? 'text-red-200' : 'text-emerald-100'}`}>
-                                                            Atual (Hoje)
+                                                        <div className={`pt-2.5 border-t text-xs font-bold flex items-center justify-between ${
+                                                            sobraReal >= 0 ? 'border-sky-500/25 text-sky-200/80' : 'border-rose-500/25 text-rose-200/80'
+                                                        }`}>
+                                                            <span>Santander líquido</span>
+                                                            <span className={`font-black ${sobraReal >= 0 ? 'text-sky-300' : 'text-rose-300'}`}>
+                                                                {sobraReal >= 0 ? '+ Líquido' : '- Déficit'}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* QUITAÇÃO DE DÍVIDAS EM ABERTO (USER REQUESTED: BASED ON REAL REVENUE R$3241.62 IN SANTANDER + R$598 BUDGET/CREDIT FROM MUMBUCA) */}
+                                        {/* QUITAÇÃO DE DÍVIDAS EM ABERTO */}
                                         <div className="bg-white/45 backdrop-blur-md rounded-3xl lg:rounded-[2.5rem] p-4 lg:p-8 border border-white/60 shadow-xl shadow-slate-200/40 mb-6 lg:mb-8">
-                                            <div className="flex items-center gap-2 lg:gap-3 mb-6 lg:mb-8">
-                                                <div className="p-2 lg:p-2.5 bg-rose-50 text-rose-600 rounded-xl">
-                                                    <Wallet size={18} className="lg:w-6 lg:h-6" strokeWidth={3} />
+                                            <div className="flex items-center gap-3 mb-6 lg:mb-8">
+                                                <div className="p-2.5 lg:p-3 bg-rose-50 text-rose-600 rounded-2xl shadow-sm">
+                                                    <Wallet size={22} className="lg:w-7 lg:h-7" strokeWidth={3} />
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <h2 className="text-sm lg:text-base font-black text-slate-800 tracking-tight">O que falta para quitar as Dívidas em Aberto?</h2>
-                                                    <span className="text-[10px] lg:text-sm font-black text-slate-400 uppercase tracking-wide">
-                                                        Demonstrativo Real baseando-se nos recursos disponíveis
+                                                    <h2 className="text-base lg:text-xl font-black text-slate-850 tracking-tight">O que falta para quitar as Dívidas em Aberto?</h2>
+                                                    <span className="text-xs lg:text-sm font-black text-slate-400 uppercase tracking-wide">
+                                                        Demonstrativo Real baseando-se no saldo do Santander em giro
                                                     </span>
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-6 mb-2">
+                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-2">
                                                 {/* Card 1: Open Debts */}
-                                                <div className="bg-white rounded-2xl p-2.5 lg:p-3.5 border border-slate-50 shadow-sm flex flex-col justify-between">
-                                                    <span className="text-[9px] lg:text-xs font-black text-slate-400 uppercase tracking-widest">Contas em Aberto</span>
-                                                    <span className="text-xl lg:text-2xl font-black text-rose-600 tracking-tight mt-1">
+                                                <div className="bg-white rounded-2xl p-3.5 lg:p-5 border border-slate-100 shadow-sm flex flex-col justify-between">
+                                                    <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-wider">Contas em Aberto</span>
+                                                    <span className="text-2xl sm:text-3xl font-black text-rose-600 tracking-tight mt-1.5">
                                                         {formatCurrency(stats.realExpenses.unpaid)}
                                                     </span>
-                                                    <span className="text-[9px] lg:text-[10px] mt-2 font-bold text-slate-400">
+                                                    <span className="text-xs sm:text-sm mt-2 font-bold text-slate-400">
                                                         Total de boletos não pagos
                                                     </span>
                                                 </div>
 
-                                                {/* Card 2: Real income in Santander */}
-                                                <div className="bg-white rounded-2xl p-2.5 lg:p-3.5 border border-slate-50 shadow-sm flex flex-col justify-between">
-                                                    <span className="text-[9px] lg:text-xs font-black text-slate-400 uppercase tracking-widest">Saldo Real (Santander)</span>
-                                                    <span className="text-xl lg:text-2xl font-black text-emerald-600 tracking-tight mt-1">
+                                                {/* Card 2: Santander Giro */}
+                                                <div className="bg-white rounded-2xl p-3.5 lg:p-5 border border-slate-100 shadow-sm flex flex-col justify-between">
+                                                    <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-wider">Saldo em Giro (Santander)</span>
+                                                    <span className="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight mt-1.5">
                                                         {formatCurrency(bankReserves.santander)}
                                                     </span>
-                                                    <span className="text-[9px] lg:text-[10px] mt-2 font-bold text-slate-400">
-                                                        Disponível no Santander
+                                                    <span className="text-xs sm:text-sm mt-2 font-bold text-slate-400">
+                                                        Em conta para pagamentos
                                                     </span>
                                                 </div>
 
-                                                {/* Card 3: Mumbuca Credit */}
-                                                <div className="bg-white rounded-2xl p-2.5 lg:p-3.5 border border-slate-50 shadow-sm flex flex-col justify-between">
-                                                    <span className="text-[9px] lg:text-xs font-black text-slate-400 uppercase tracking-wide tracking-widest">Crédito Mumbuca</span>
-                                                    <span className="text-xl lg:text-2xl font-black text-teal-600 tracking-tight mt-1">
-                                                        {formatCurrency(598.00)}
+                                                {/* Card 3: Sofisa (Poupança protegida) */}
+                                                <div className="bg-white rounded-2xl p-3.5 lg:p-5 border border-slate-100 shadow-sm flex flex-col justify-between">
+                                                    <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-wider">Poupança Sofisa</span>
+                                                    <span className="text-2xl sm:text-3xl font-black text-teal-600 tracking-tight mt-1.5">
+                                                        {formatCurrency(bankReserves.sofisa)}
                                                     </span>
-                                                    <span className="text-[9px] lg:text-[10px] mt-2 font-bold text-slate-400">
-                                                        Entrada prevista
+                                                    <span className="text-xs sm:text-sm mt-2 font-bold text-teal-700">
+                                                        🛡️ Poupança protegida (não gira)
                                                     </span>
                                                 </div>
 
                                                 {/* Card 4: Missing Amount */}
                                                 {(() => {
-                                                    const santanderBase = bankReserves.santander;
-                                                    const mumbucaInflow = 598.00;
-                                                    const totalResources = santanderBase + mumbucaInflow;
-                                                    const missingForDebts = stats.realExpenses.unpaid - totalResources;
-                                                    const isDeficit = missingForDebts > 0;
+                                                    const isDeficit = precisoParaQuitar > 0;
                                                     
                                                     return (
-                                                        <div className={`rounded-2xl p-2.5 lg:p-3.5 border shadow-sm flex flex-col justify-between ${
+                                                        <div className={`rounded-2xl p-3.5 lg:p-5 border shadow-sm flex flex-col justify-between ${
                                                             isDeficit 
-                                                                ? 'bg-amber-50/70 border-amber-100 text-amber-900' 
-                                                                : 'bg-emerald-50/70 border-emerald-100 text-emerald-950'
+                                                                ? 'bg-amber-50/80 border-amber-200 text-amber-950' 
+                                                                : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
                                                         }`}>
-                                                            <span className="text-[9px] lg:text-xs font-black uppercase tracking-widest opacity-80">
+                                                            <span className="text-xs sm:text-sm font-black uppercase tracking-wider opacity-80">
                                                                 {isDeficit ? 'Quanto Ainda Preciso' : 'Saldo Suficiente'}
                                                             </span>
-                                                            <span className="text-xl lg:text-2xl font-black tracking-tight mt-1">
-                                                                {isDeficit ? formatCurrency(missingForDebts) : 'R$ 0,00'}
+                                                            <span className="text-2xl sm:text-3xl font-black tracking-tight mt-1.5">
+                                                                {isDeficit ? formatCurrency(precisoParaQuitar) : 'R$ 0,00'}
                                                             </span>
-                                                            <span className="text-[9px] lg:text-[10px] mt-2 font-bold opacity-80">
+                                                            <span className="text-xs sm:text-sm mt-2 font-bold opacity-80">
                                                                 {isDeficit 
-                                                                    ? 'Déficit para zerar as contas' 
-                                                                    : 'Contas totalmente cobertas!'}
+                                                                    ? `Falta ${formatCurrency(precisoParaQuitar)} no Santander` 
+                                                                    : 'Contas cobertas pelo Santander!'}
                                                             </span>
                                                         </div>
                                                     );
@@ -2593,14 +2883,14 @@ const App: React.FC = () => {
                                         </div>
 
                                         {/* EXPENSES BY CATEGORY CARD */}
-                                        <div className="bg-white/40 backdrop-blur-md rounded-3xl lg:rounded-[2.5rem] p-4 lg:p-8 border border-white/60 shadow-xl shadow-slate-200/40 mb-6 lg:mb-8">
-                                            <div className="flex items-center gap-2 lg:gap-3 mb-6 lg:mb-8">
-                                                <div className="p-2 lg:p-2.5 bg-rose-50 text-rose-600 rounded-xl">
-                                                    <Users size={18} className="lg:w-6 lg:h-6" strokeWidth={3} />
+                                        <div className="bg-white/45 backdrop-blur-md rounded-3xl lg:rounded-[2.5rem] p-4 lg:p-8 border border-white/60 shadow-xl shadow-slate-200/40 mb-6 lg:mb-8">
+                                            <div className="flex items-center gap-3 mb-6 lg:mb-8">
+                                                <div className="p-2.5 lg:p-3 bg-rose-50 text-rose-600 rounded-2xl shadow-sm">
+                                                    <Users size={22} className="lg:w-7 lg:h-7" strokeWidth={3} />
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <h2 className="text-sm lg:text-base font-black text-slate-800 tracking-tight">Despesas por Categoria</h2>
-                                                    <span className="text-[10px] lg:text-sm font-black text-slate-400 uppercase tracking-wide">
+                                                    <h2 className="text-base lg:text-xl font-black text-slate-850 tracking-tight">Despesas por Categoria</h2>
+                                                    <span className="text-xs lg:text-sm font-black text-slate-500 uppercase tracking-wide">
                                                         Pendente: {formatCurrency(groupedDebts.reduce((acc, g) => acc + (g.total - g.paidAmount), 0))}
                                                     </span>
                                                 </div>
@@ -2608,30 +2898,30 @@ const App: React.FC = () => {
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
                                                 {groupedDebts.map(group => (
-                                                    <button key={group.name} onClick={() => handleFilter('group', group.name)} className="bg-white rounded-2xl lg:rounded-3xl p-2.5 lg:p-3.5 border border-slate-50 shadow-sm flex items-center justify-between group hover:shadow-md transition-all w-full text-left">
-                                                        <div className="flex items-center gap-2.5 lg:gap-3 overflow-hidden">
-                                                            <div className={`w-10 h-10 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl bg-gradient-to-br ${getDebtColor(group.name)} text-white flex items-center justify-center shrink-0 shadow-lg shadow-slate-200/50`}>
-                                                                <User size={20} strokeWidth={2.5} className="lg:w-6 lg:h-6" />
+                                                    <button key={group.name} onClick={() => handleFilter('group', group.name)} className="bg-white rounded-2xl lg:rounded-3xl p-3.5 lg:p-4 border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition-all w-full text-left">
+                                                        <div className="flex items-center gap-3 lg:gap-4 overflow-hidden">
+                                                            <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-gradient-to-br ${getDebtColor(group.name)} text-white flex items-center justify-center shrink-0 shadow-lg shadow-slate-200/50`}>
+                                                                <User size={22} strokeWidth={2.5} className="lg:w-6 lg:h-6" />
                                                             </div>
                                                             <div className="flex flex-col flex-1">
-                                                                <span className="text-[9px] lg:text-xs font-black text-slate-400 uppercase tracking-widest">{group.name}</span>
-                                                                <span className="text-base lg:text-xl font-black text-slate-850 tracking-tight">
+                                                                <span className="text-xs sm:text-sm font-black text-slate-500 uppercase tracking-wider">{group.name}</span>
+                                                                <span className="text-lg sm:text-xl lg:text-2xl font-black text-slate-900 tracking-tight">
                                                                     Falta: {formatCurrency(group.total - group.paidAmount)}
                                                                 </span>
-                                                                <div className="flex flex-col gap-1 mt-1 text-[10px] lg:text-xs font-bold w-full">
-                                                                    <div className="flex items-center justify-between text-emerald-600 bg-emerald-50/70 px-2 py-0.5 rounded-md">
+                                                                <div className="flex flex-col gap-1.5 mt-1.5 text-xs sm:text-sm font-bold w-full">
+                                                                    <div className="flex items-center justify-between text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
                                                                         <span>Pago:</span>
-                                                                        <span className="font-extrabold">{formatCurrency(group.paidAmount)}</span>
+                                                                        <span className="font-black">{formatCurrency(group.paidAmount)}</span>
                                                                     </div>
-                                                                    <div className="flex items-center justify-between text-slate-605 bg-slate-50 px-2 py-0.5 rounded-md">
+                                                                    <div className="flex items-center justify-between text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
                                                                         <span>Total:</span>
-                                                                        <span className="font-extrabold">{formatCurrency(group.total)}</span>
+                                                                        <span className="font-black">{formatCurrency(group.total)}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="p-2 lg:p-3 bg-slate-50 rounded-lg text-slate-300 group-hover:text-rose-500 transition-colors shrink-0">
-                                                            <ArrowRight size={16} className="lg:w-5 lg:h-5" />
+                                                        <div className="p-2 lg:p-3 bg-slate-50 rounded-xl text-slate-400 group-hover:text-rose-500 transition-colors shrink-0">
+                                                            <ArrowRight size={18} className="lg:w-5 lg:h-5" />
                                                         </div>
                                                     </button>
                                                 ))}
@@ -2647,20 +2937,20 @@ const App: React.FC = () => {
                                         </div>
 
                                         {/* CATEGORY OVERVIEW - Matching Screenshot 3 */}
-                                        <div className="bg-white/40 backdrop-blur-md rounded-[2.5rem] p-6 lg:p-8 border border-white/60 shadow-xl shadow-slate-200/40">
-                                            <div className="flex items-center gap-3 mb-8">
-                                                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                                        <div className="bg-white/45 backdrop-blur-md rounded-3xl lg:rounded-[2.5rem] p-5 lg:p-8 border border-white/60 shadow-xl shadow-slate-200/40">
+                                            <div className="flex items-center gap-3 mb-6 lg:mb-8">
+                                                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl shadow-sm">
                                                     <PiggyBank size={24} strokeWidth={3} />
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <h2 className="text-base font-black text-slate-800 tracking-tight">Categorização de Gastos</h2>
-                                                    <span className="text-sm font-black text-slate-400 uppercase tracking-wide">
+                                                    <h2 className="text-base lg:text-xl font-black text-slate-850 tracking-tight">Categorização de Gastos</h2>
+                                                    <span className="text-xs lg:text-sm font-black text-slate-500 uppercase tracking-wide">
                                                         Total: {formatCurrency(stats.realExpenses.total)}
                                                     </span>
                                                 </div>
                                             </div>
 
-                                        <div className="grid grid-cols-1 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {(() => {
                                                 const currentMonthStr = `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
                                                 const isExcluded = (t: any) => {
@@ -2673,10 +2963,17 @@ const App: React.FC = () => {
                                                     ...monthData.expenses.filter(e => !isExcluded(e)),
                                                     ...monthData.avulsosItems.filter(e => !isExcluded(e))
                                                 ];
-                                                const catsSet = new Set(allExps.map(e => e.category));
+                                                const catsSet = new Set(
+                                                    allExps
+                                                        .map(e => e.category)
+                                                        .filter(cat => cat && cat !== 'Jady' && cat !== 'Claudio Silva' && cat !== 'Claudio' && cat !== 'Cláudio')
+                                                );
                                                 const cats = Array.from(catsSet).sort();
                                                 return cats.map(cat => {
-                                                    const catExps = allExps.filter(e => e.category === cat);
+                                                    const catExps = allExps.filter(e => e.category === cat || 
+                                                        (cat === 'Jady' && ((e.group || '').toUpperCase().includes('JADY') || (e.description || '').toUpperCase().includes('(JADY)') || (e.category || '').toUpperCase() === 'JADY')) ||
+                                                        (cat === 'Claudio Silva' && ((e.group || '').toUpperCase().includes('CLAUDIO') || (e.group || '').toUpperCase().includes('CLÁUDIO') || (e.description || '').toUpperCase().includes('CLAUDIO') || (e.description || '').toUpperCase().includes('CLÁUDIO') || (e.category || '').toUpperCase().includes('CLAUDIO') || (e.category || '').toUpperCase().includes('CLÁUDIO')))
+                                                    );
                                                     const amount = catExps.reduce((s, e) => s + (e.amount || 0), 0);
                                                     const paidAmount = catExps.filter(e => e.paid).reduce((s, e) => s + (e.amount || 0), 0);
                                                     const pendingAmount = catExps.filter(e => !e.paid).reduce((s, e) => s + (e.amount || 0), 0);
@@ -2686,7 +2983,10 @@ const App: React.FC = () => {
                                                     
                                                     const getCatStyle = (c: string) => {
                                                         const cn = c.toUpperCase();
-                                                        if (cn.includes('DÍVIDAS') || cn.includes('DIVIDAS')) return { bg: 'bg-rose-50', text: 'text-rose-600', bar: 'bg-rose-500', icon: ShoppingCart };
+                                                        if (cn.includes('DÍVIDAS') || cn.includes('DIVIDAS') || cn.includes('EMPRÉSTIMOS') || cn.includes('EMPRESTIMOS')) return { bg: 'bg-rose-50', text: 'text-rose-600', bar: 'bg-rose-500', icon: Landmark };
+                                                        if (cn.includes('JADY')) return { bg: 'bg-fuchsia-50', text: 'text-fuchsia-600', bar: 'bg-fuchsia-500', icon: CreditCard };
+                                                        if (cn.includes('CLAUDIO') || cn.includes('CLÁUDIO')) return { bg: 'bg-purple-50', text: 'text-purple-600', bar: 'bg-purple-500', icon: CreditCard };
+                                                        if (cn.includes('IAGO')) return { bg: 'bg-sky-50', text: 'text-sky-600', bar: 'bg-sky-500', icon: CreditCard };
                                                         if (c === 'Moradia') return { bg: 'bg-blue-50', text: 'text-blue-600', bar: 'bg-blue-500', icon: HomeIcon };
                                                         if (c === 'Lazer') return { bg: 'bg-emerald-50', text: 'text-emerald-600', bar: 'bg-emerald-500', icon: Palmtree };
                                                         if (c === 'Saúde') return { bg: 'bg-rose-50', text: 'text-rose-600', bar: 'bg-rose-500', icon: Heart };
@@ -2694,6 +2994,9 @@ const App: React.FC = () => {
                                                         if (c === 'Transporte') return { bg: 'bg-amber-50', text: 'text-amber-600', bar: 'bg-amber-500', icon: Car };
                                                         if (c === 'Educação') return { bg: 'bg-emerald-50', text: 'text-emerald-600', bar: 'bg-emerald-500', icon: GraduationCap };
                                                         if (c === 'Alimentação') return { bg: 'bg-orange-50', text: 'text-orange-600', bar: 'bg-orange-500', icon: ShoppingBag };
+                                                        if (c === 'Estadias') return { bg: 'bg-cyan-50', text: 'text-cyan-600', bar: 'bg-cyan-500', icon: HomeIcon };
+                                                        if (c === 'Viagens') return { bg: 'bg-sky-50', text: 'text-sky-600', bar: 'bg-sky-500', icon: Plane };
+                                                        if (c === 'Roupas') return { bg: 'bg-indigo-50', text: 'text-indigo-600', bar: 'bg-indigo-500', icon: Shirt };
                                                         return { bg: 'bg-gray-50', text: 'text-gray-600', bar: 'bg-gray-500', icon: MoreHorizontal };
                                                     };
                                                     
@@ -2701,44 +3004,44 @@ const App: React.FC = () => {
                                                     const Icon = s.icon;
 
                                                     return (
-                                                        <button key={cat} onClick={() => handleFilter('category', cat)} className="bg-white rounded-2xl lg:rounded-3xl p-2.5 lg:p-3.5 border border-slate-50 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-2.5 lg:gap-3 group hover:shadow-md transition-all overflow-hidden w-full text-left">
+                                                        <button key={cat} onClick={() => handleFilter('category', cat)} className="bg-white rounded-2xl lg:rounded-3xl p-3.5 lg:p-4 border border-slate-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:gap-4 group hover:shadow-md transition-all overflow-hidden w-full text-left">
                                                             <div className="flex items-center gap-3 w-full sm:w-auto">
-                                                                <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl ${s.bg} ${s.text} flex items-center justify-center shrink-0`}>
-                                                                    <Icon size={20} strokeWidth={2.5} className="lg:w-6 lg:h-6" />
+                                                                <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-2xl ${s.bg} ${s.text} flex items-center justify-center shrink-0`}>
+                                                                    <Icon size={22} strokeWidth={2.5} className="lg:w-6 lg:h-6" />
                                                                 </div>
                                                                  <div className="flex flex-col sm:hidden flex-1">
-                                                                    <span className="text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest">{cat}</span>
-                                                                    <span className="text-sm lg:text-base font-black text-slate-800 tracking-tight">
+                                                                    <span className="text-xs sm:text-sm font-black text-slate-500 uppercase tracking-wider">{cat}</span>
+                                                                    <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
                                                                         {formatCurrency(amount)}
                                                                     </span>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex-1 flex flex-col gap-0.5 w-full">
-                                                                <span className="hidden sm:inline text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest">{cat}</span>
-                                                                <span className="hidden sm:inline text-sm lg:text-base font-black text-slate-800 tracking-tight">
+                                                            <div className="flex-1 flex flex-col gap-1 w-full">
+                                                                <span className="hidden sm:inline text-xs sm:text-sm font-black text-slate-500 uppercase tracking-wider">{cat}</span>
+                                                                <span className="hidden sm:inline text-base sm:text-lg lg:text-xl font-black text-slate-900 tracking-tight">
                                                                     {formatCurrency(amount)}
                                                                 </span>
-                                                                <div className="w-full bg-slate-100 h-1 rounded-full mt-0.5 lg:mt-1 overflow-hidden">
+                                                                <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
                                                                     <div className={`h-full ${s.bar} rounded-full`} style={{ width: `${percent}%` }}></div>
                                                                 </div>
                                                                 
-                                                                <div className="flex flex-col gap-1 mt-1 text-[10px] lg:text-xs font-bold w-full">
-                                                                    <div className="flex items-center justify-between text-emerald-600 bg-emerald-50/70 px-2 py-0.5 rounded-md">
+                                                                <div className="flex flex-col gap-1.5 mt-1.5 text-xs sm:text-sm font-bold w-full">
+                                                                    <div className="flex items-center justify-between text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
                                                                         <span>Pago:</span>
-                                                                        <span className="font-extrabold">{formatCurrency(paidAmount)}</span>
+                                                                        <span className="font-black">{formatCurrency(paidAmount)}</span>
                                                                     </div>
-                                                                    <div className="flex items-center justify-between text-rose-600 bg-rose-50/70 px-2 py-0.5 rounded-md">
+                                                                    <div className="flex items-center justify-between text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg">
                                                                         <span>Falta:</span>
-                                                                        <span className="font-extrabold">{formatCurrency(pendingAmount)}</span>
+                                                                        <span className="font-black">{formatCurrency(pendingAmount)}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="relative w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center shrink-0 ml-auto sm:ml-1 mt-2 sm:mt-0">
+                                                            <div className="relative w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center shrink-0 ml-auto sm:ml-2 mt-2 sm:mt-0">
                                                                 <svg className="w-full h-full transform -rotate-90">
-                                                                    <circle cx="50%" cy="50%" r="42%" fill="transparent" stroke="currentColor" strokeWidth="3" className="text-slate-100" />
-                                                                    <circle cx="50%" cy="50%" r="42%" fill="transparent" stroke="currentColor" strokeWidth="3" strokeDasharray="100" strokeDashoffset={100 - percent} className={s.text} strokeLinecap="round" />
+                                                                    <circle cx="50%" cy="50%" r="40%" fill="transparent" stroke="currentColor" strokeWidth="3.5" className="text-slate-100" />
+                                                                    <circle cx="50%" cy="50%" r="40%" fill="transparent" stroke="currentColor" strokeWidth="3.5" strokeDasharray="100" strokeDashoffset={100 - percent} className={s.text} strokeLinecap="round" />
                                                                 </svg>
-                                                                <span className="absolute text-[7px] lg:text-[8px] font-black text-slate-600">{percent}%</span>
+                                                                <span className="absolute text-xs font-black text-slate-800">{percent}%</span>
                                                             </div>
                                                         </button>
                                                     );
@@ -2807,7 +3110,7 @@ const App: React.FC = () => {
                                 transition={{ duration: 0.5 }}
                                 className="w-full flex flex-col gap-8 max-w-7xl mx-auto px-4 lg:px-8 pb-8"
                             >
-                                <SavingsPlanner monthData={monthData} currencyFormatter={formatCurrency} />
+                                <SavingsPlanner monthData={monthData} currencyFormatter={formatCurrency} onUpdateReserves={handleUpdateReserves} />
                             </motion.div>
                         )}
 

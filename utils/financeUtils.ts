@@ -156,10 +156,7 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { description: "CONTA DA VIVO MARCELLY", amount: 66.60, category: "Moradia", day: 23, group: 'MORADIA' },
         { description: "CARTÃO DO IAGO", amount: 1819.22, category: "Iago", day: 7, group: 'IAGO (CARTÃO NUBANK)' },
         { description: "REMÉDIOS DO ANDRÉ", amount: 400.00, category: "Saúde", day: 10, group: 'MORADIA' },
-        { description: "REMÉDIO DO ANDRÉ (TEA/TDAH)", amount: 250.00, category: "Saúde", day: 10, group: 'MORADIA' },
-        { description: "CANETA POVIZTRA (CONTROLE METABÓLICO)", amount: 490.00, category: "Saúde", day: 10, group: 'MORADIA' },
-        { description: "VITAMINA D INJETÁVEL (CONTROLE METABÓLICO)", amount: 152.00, category: "Saúde", day: 10, group: 'MORADIA' },
-        { description: "VITAMINA B (CONTROLE METABÓLICO)", amount: 46.00, category: "Saúde", day: 10, group: 'MORADIA' }
+        { description: "REMÉDIO DO ANDRÉ (TEA/TDAH)", amount: 250.00, category: "Saúde", day: 10, group: 'MORADIA' }
     ];
 
     cyclicalConfig.forEach(c => {
@@ -168,7 +165,7 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         let isSuspended = false;
         let paidAtStr: string | undefined = undefined;
 
-        const isNewRemedios = c.description.includes("TEA/TDAH") || c.description.includes("POVIZTRA") || c.description.includes("VITAMINA");
+        const isNewRemedios = c.description.includes("TEA/TDAH");
         if (isNewRemedios && ((year === 2026 && month < 9) || year < 2026)) {
             return;
         }
@@ -201,17 +198,21 @@ export const generateMonthData = (year: number, month: number): MonthData => {
             return;
         }
 
-        // Cartão do Itaú da Marcelly is set to 0.00 for June 2026 as requested (deixe essa conta só para o mês que vem, e esse mês deixe zerado)
-        if (c.description.toUpperCase() === "CARTÃO DO ITAÚ DA MARCELLY" && year === 2026 && month === 6) {
-            finalAmount = 0.00;
+        // Cartão do Itaú da Marcelly: 200.00 a partir de Outubro/2026 e meses subsequentes
+        if (c.description.toUpperCase().includes("CARTÃO DO ITAÚ DA MARCELLY") || c.description.toUpperCase().includes("CARTAO DO ITAU DA MARCELLY")) {
+            if (year > 2026 || (year === 2026 && month >= 10)) {
+                finalAmount = 200.00;
+            } else if (year === 2026 && month === 6) {
+                finalAmount = 0.00;
+            }
         }
 
-        // Cartão do Itaú do André: 237.96 em Setembro/2026, 343.98 em Outubro/2026, 200.00 em Julho/2026, etc.
+        // Cartão do Itaú do André: 237.96 em Setembro/2026, 500.00 em Outubro/2026 e meses subsequentes, 200.00 em Julho/2026, etc.
         if (c.description.toUpperCase().includes("CARTÃO DO ITAÚ DO ANDRÉ") || c.description.toUpperCase().includes("CARTAO DO ITAU DO ANDRE")) {
-            if (year === 2026 && month === 9) {
+            if (year > 2026 || (year === 2026 && month >= 10)) {
+                finalAmount = 500.00;
+            } else if (year === 2026 && month === 9) {
                 finalAmount = 237.96;
-            } else if (year === 2026 && month === 10) {
-                finalAmount = 343.98;
             } else if (year === 2026 && month === 7) {
                 finalAmount = 200.00;
             } else if (year === 2026 && month >= 6) {
@@ -223,8 +224,9 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         if (c.description.toUpperCase() === "CARTÃO DO IAGO") {
             if (year === 2026 && month === 7) {
                 finalAmount = 1204.00;
-            } else if ((year === 2026 && month >= 9) || year > 2026) {
-                finalAmount = 0.00; // Despesas detalhadas a partir de setembro
+            } else if ((year === 2026 && month >= 8) || year > 2026) {
+                finalAmount = 0.00; // Despesas detalhadas a partir de setembro/agosto
+                return; // Return so it's filtered out completely
             }
         }
 
@@ -276,11 +278,12 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { desc: "ABASTECIMENTO 1", totalAmount: 275.00, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ABASTECIMENTO 2", totalAmount: 150.00, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ACRÉSCIMO PASSAGEM AÉREA", totalAmount: 240.00, cat: "Lazer", day: 7, installments: 2, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB (HMT3Q9TBYB)", totalAmount: 1144.44, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB ARACAJU 19-21 JUL (hm2ydd2j9t)", totalAmount: 570.06, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB MACEIÓ 17-19 JUL (hmepqps338)", totalAmount: 380.00, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB MACEIÓ 19-20 JUL (hm5kaqjy4j)", totalAmount: 163.00, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB SALVADOR 16-18 JUL (hmjhtc29yf)", totalAmount: 185.70, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "ADESÃO DA SEGURADORA", totalAmount: 100.00, cat: "Moradia", day: 5, installments: 1, sY: 2026, sM: 9, group: 'MORADIA' },
+        { desc: "AIRBNB (HMT3Q9TBYB)", totalAmount: 1144.44, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hm2ydd2j9t)", totalAmount: 313.02, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hmepqps338)", totalAmount: 379.98, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hm5kaqjy4j)", totalAmount: 163.02, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hmjhtc29yf)", totalAmount: 417.84, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ALINHAMENTO DO CARRO", totalAmount: 330.00, cat: "Transporte", day: 12, installments: 2, sY: 2026, sM: 7, group: 'MARCIA BRITO' },
         { desc: "CABESOM", totalAmount: 179.00, cat: "Outros", day: 28, installments: 2, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
         { desc: "CELULAR DA MARCELLY", totalAmount: 4628.88, cat: "Outros", day: 10, installments: 12, sY: 2026, sM: 3, group: 'MARCIA BISPO' },
@@ -289,21 +292,25 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { desc: "CLAROFLEX MARCELLY", totalAmount: 44.90, cat: "Moradia", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "COMPRA DE MAQUIAGEM", totalAmount: 232.00, cat: "Outros", day: 10, installments: 2, sY: 2026, sM: 6, group: 'JADY' },
         { desc: "COMPRA DE TÊNIS", totalAmount: 619.98, cat: "Outros", day: 10, installments: 2, sY: 2026, sM: 6, group: 'JADY' },
-        { desc: "COMPRA NA BRISA (LILI)", totalAmount: 260.01, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
-        { desc: "COMPRA NA DALUZ (LILI)", totalAmount: 168.00, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
-        { desc: "COMPRA NA SHEIN (LILI)", totalAmount: 282.21, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
+        { desc: "COMPRA NA BRISA (LILI)", totalAmount: 260.01, cat: "Roupas", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
+        { desc: "COMPRA NA DALUZ (LILI)", totalAmount: 168.00, cat: "Roupas", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
+        { desc: "COMPRA NA SHEIN (LILI)", totalAmount: 282.21, cat: "Roupas", day: 4, installments: 3, sY: 2026, sM: 8, group: 'LILI TORRES' },
+        { desc: "ROUPAS NA BRISA (LILI)", totalAmount: 248.01, cat: "Roupas", day: 4, installments: 3, sY: 2026, sM: 10, group: 'LILI TORRES' },
+        { desc: "SANDÁLIAS (LILI)", totalAmount: 292.59, cat: "Roupas", day: 4, installments: 3, sY: 2026, sM: 10, group: 'LILI TORRES' },
         { desc: "COMPRAS GUANABARA", totalAmount: 923.54, cat: "Alimentação", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "CONSERTO DO CARRO DE OUTUBRO", totalAmount: 1447.00, cat: "Transporte", day: 12, installments: 4, sY: 2025, sM: 11, group: 'MARCIA BRITO' },
         { desc: "DENTISTA", totalAmount: 750.00, cat: "Saúde", day: 12, installments: 3, sY: 2026, sM: 9, group: 'MARCIA BRITO' },
-        { desc: "EMPRÉSTIMO COM LILI", totalAmount: 4000.00, cat: "Dívidas", day: 4, installments: 5, sY: 2026, sM: 7, group: 'LILI TORRES' },
-        { desc: "EMPRÉSTIMO COM MARCIA BISPO", totalAmount: 400.00, cat: "Dívidas", day: 15, installments: 4, sY: 2026, sM: 4, group: 'MARCIA BISPO' },
-        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE ABRIL (MARCIA BISPO)", totalAmount: 1000.00, cat: "Dívidas", day: 15, installments: 4, sY: 2026, sM: 10, group: 'MARCIA BISPO' },
-        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO", totalAmount: 1944.00, cat: "Dívidas", day: 20, installments: 4, sY: 2026, sM: 6, group: 'MARCIA BRITO' },
-        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (CLAUDIO SILVA)", totalAmount: 500.00, cat: "Dívidas", day: 15, installments: 3, sY: 2026, sM: 10, group: 'CLAUDIO SILVA', customAmounts: [150.00, 150.00, 200.00] },
-        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO (MARCIA BISPO)", totalAmount: 1500.00, cat: "Dívidas", day: 15, installments: 5, sY: 2026, sM: 10, group: 'MARCIA BISPO' },
-        { desc: "EMPRÉSTIMO PARA VIAJAR", totalAmount: 2499.96, cat: "Dívidas", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "EMPRÉSTIMO VIAGEM NORDESTE (LILI)", totalAmount: 2015.40, cat: "Dívidas", day: 4, installments: 6, sY: 2026, sM: 8, group: 'LILI TORRES' },
-        { desc: "ESTADIA DE IDA EM SAO PAULO", totalAmount: 289.44, cat: "Lazer", day: 4, installments: 4, sY: 2026, sM: 3, group: 'LILI TORRES' },
+        { desc: "DIÁRIA DE PEDREIRO", totalAmount: 160.00, cat: "Moradia", day: 12, installments: 1, sY: 2026, sM: 9, group: 'MARCIA BRITO' },
+        { desc: "EMPRÉSTIMO COM LILI", totalAmount: 4000.00, cat: "Empréstimos", day: 4, installments: 5, sY: 2026, sM: 7, group: 'LILI TORRES' },
+        { desc: "EMPRÉSTIMO COM MARCIA BISPO", totalAmount: 400.00, cat: "Empréstimos", day: 15, installments: 4, sY: 2026, sM: 4, group: 'MARCIA BISPO' },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE ABRIL (MARCIA BISPO)", totalAmount: 1000.00, cat: "Empréstimos", day: 15, installments: 4, sY: 2026, sM: 10, group: 'MARCIA BISPO' },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO", totalAmount: 1944.00, cat: "Empréstimos", day: 20, installments: 4, sY: 2026, sM: 7, group: 'MARCIA BRITO' },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO", totalAmount: 1000.00, cat: "Empréstimos", day: 15, installments: 3, sY: 2026, sM: 10, group: 'CLAUDIO SILVA' },
+        { desc: "EMPRÉSTIMO PARA VIAGEM DE SALVADOR", totalAmount: 1185.78, cat: "Empréstimos", day: 10, installments: 3, sY: 2026, sM: 8, group: 'JADY' },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO", totalAmount: 2000.00, cat: "Empréstimos", day: 10, installments: 5, sY: 2026, sM: 10, group: 'JADY' },
+        { desc: "EMPRÉSTIMO PARA VIAJAR", totalAmount: 2499.96, cat: "Empréstimos", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "EMPRÉSTIMO VIAGEM NORDESTE (LILI)", totalAmount: 2015.40, cat: "Empréstimos", day: 4, installments: 6, sY: 2026, sM: 8, group: 'LILI TORRES' },
+        { desc: "ESTADIA DE IDA EM SAO PAULO", totalAmount: 289.44, cat: "Estadias", day: 4, installments: 4, sY: 2026, sM: 3, group: 'LILI TORRES' },
         { desc: "ESTADIA DE VOLTA EM SAO PAULO", totalAmount: 358.20, cat: "Lazer", day: 4, installments: 4, sY: 2026, sM: 3, group: 'LILI TORRES' },
         { desc: "ESTADIA EM CIDADE DO CABO", totalAmount: 1197.00, cat: "Lazer", day: 4, installments: 5, sY: 2026, sM: 3, group: 'LILI TORRES' },
         { desc: "ESTADIA EM JOHANESBURGO", totalAmount: 1363.93, cat: "Lazer", day: 4, installments: 5, sY: 2026, sM: 3, group: 'LILI TORRES' },
@@ -314,20 +321,18 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { desc: "KR AUTOPEÇAS", totalAmount: 291.00, cat: "Transporte", day: 12, installments: 7, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
         { desc: "MALA DO ANDRÉ", totalAmount: 179.00, cat: "Lazer", day: 12, installments: 3, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
         { desc: "MÃO DE OBRA DO DAVI", totalAmount: 372.82, cat: "Moradia", day: 12, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
-        { desc: "PASSAGENS AÉREAS (IAGO)", totalAmount: 1394.00, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "PASSAGENS AÉREAS JOBURG X CAPE TOWN", totalAmount: 1560.00, cat: "Lazer", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
-        { desc: "PASSAGENS AÉREAS SP X JOBURG", totalAmount: 4038.96, cat: "Lazer", day: 4, installments: 8, sY: 2026, sM: 1, group: 'LILI TORRES' },
-        { desc: "PASSAGENS DE ONIBUS RIO x SP", totalAmount: 438.00, cat: "Transporte", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
-        { desc: "PASSAGENS PARA SALVADOR", totalAmount: 1301.64, cat: "Lazer", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "PASSEIO DE SAFARI", totalAmount: 5716.00, cat: "Lazer", day: 10, installments: 10, sY: 2026, sM: 3, group: 'JADY' },
+        { desc: "PASSAGENS AÉREAS JOBURG X CAPE TOWN", totalAmount: 1560.00, cat: "Viagens", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
+        { desc: "PASSAGENS AÉREAS SP X JOBURG", totalAmount: 4038.96, cat: "Viagens", day: 4, installments: 8, sY: 2026, sM: 1, group: 'LILI TORRES' },
+        { desc: "PASSAGENS DE ONIBUS RIO x SP", totalAmount: 438.00, cat: "Viagens", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
+        { desc: "PASSAGENS PARA SALVADOR", totalAmount: 1301.64, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "PASSEIO DE SAFARI", totalAmount: 3429.60, cat: "Lazer", day: 10, installments: 6, sY: 2026, sM: 3, group: 'JADY' },
         { desc: "PRESENTE DO ANDRÉ (LILI)", totalAmount: 359.91, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 9, group: 'LILI TORRES' },
-        { desc: "PRIMEIRO CARRO ALUGADO", totalAmount: 379.02, cat: "Transporte", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "PRIMEIRO CARRO ALUGADO", totalAmount: 379.02, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "REFORMA DO SOFÁ DE CAXIAS", totalAmount: 575.00, cat: "Moradia", day: 12, installments: 5, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
         { desc: "REMÉDIO PARA CUPIM", totalAmount: 37.00, cat: "Saúde", day: 28, installments: 1, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
         { desc: "REMÉDIOS (MARCIA BRITO)", totalAmount: 246.09, cat: "Saúde", day: 28, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
         { desc: "RENEGOCIAR CARREFOUR", totalAmount: 5000.00, cat: "Dívidas", day: 12, installments: 16, sY: 2025, sM: 12, group: 'MARCIA BRITO' },
-        { desc: "SEGUNDO CARRO ALUGADO", totalAmount: 471.42, cat: "Transporte", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "UBER", totalAmount: 12.58, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "SEGUNDO CARRO ALUGADO", totalAmount: 471.42, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' }
     ];
 
 
@@ -337,15 +342,13 @@ export const generateMonthData = (year: number, month: number): MonthData => {
             return;
         }
 
-        // Passagens para Salvador: remove from Nov 2026, Dec 2026, Jan 2027 to avoid duplicate with Passagens Aéreas (Iago)
-        if (f.desc === "PASSAGENS PARA SALVADOR" && ((year === 2026 && (month === 11 || month === 12)) || (year === 2027 && month === 1))) {
-            return;
-        }
-
         let startYearOverride = f.sY;
         let startMonthOverride = f.sM;
         if (f.desc === "EMPRÉSTIMO COM MARCIA BISPO" && (year > 2026 || (year === 2026 && month > 6))) {
             startMonthOverride = f.sM + 1; // resumes in July 2026 as installment 3/4
+        }
+        if (f.desc === "EMPRÉSTIMO COM LILI" && (year > 2026 || (year === 2026 && month > 10))) {
+            startMonthOverride = f.sM + 1; // resumes in November 2026 as installment 4/5
         }
 
         let inst = getInstallmentInfo(startYearOverride, startMonthOverride, f.installments, year, month);
@@ -379,6 +382,7 @@ export const generateMonthData = (year: number, month: number): MonthData => {
                 amount: parseFloat(installmentAmount.toFixed(2)),
                 category: f.cat,
                 paid: isPaid,
+                skipped: (f.desc === "EMPRÉSTIMO COM LILI" && year === 2026 && month === 10) ? true : undefined,
                 dueDate: `${year}-${month.toString().padStart(2,'0')}-${f.day.toString().padStart(2,'0')}`,
                 installments: inst,
                 group: f.group

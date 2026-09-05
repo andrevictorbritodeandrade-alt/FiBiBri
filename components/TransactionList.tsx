@@ -37,6 +37,8 @@ const getCategoryIcon = (category: string) => {
         case 'Abastecimento': return <Fuel {...props} />;
         case 'Doação': return <Gift {...props} />;
         case 'Renda Extra': return <Coins {...props} />;
+        case 'Jady':
+        case 'Iago': return <CreditCard {...props} />;
         default: return <MoreHorizontal {...props} />;
     }
 };
@@ -54,6 +56,8 @@ const getCategoryColor = (category: string) => {
         case 'Saúde': return 'bg-red-100/40 text-red-700 border-red-100';
         case 'Transporte': return 'bg-cyan-100/40 text-cyan-700 border-cyan-100';
         case 'Dívidas': return 'bg-slate-100/60 text-slate-700 border-slate-200';
+        case 'Jady': return 'bg-fuchsia-100/40 text-fuchsia-700 border-fuchsia-100';
+        case 'Iago': return 'bg-sky-100/40 text-sky-700 border-sky-100';
         default: return 'bg-slate-50 text-slate-700 border-slate-100';
     }
 };
@@ -80,12 +84,6 @@ const getGroupColors = (key: string = '') => {
     if (key === 'MARCIA BISPO') return { 
         header: 'bg-amber-600 text-slate-950', 
         card: 'bg-amber-50/70 border-amber-200/60',
-        badge: 'bg-black/15 text-slate-950 border-black/20',
-        btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
-    };
-    if (key === 'CLAUDIO SILVA' || key.includes('CLAUDIO')) return { 
-        header: 'bg-teal-600 text-slate-950', 
-        card: 'bg-teal-50/70 border-teal-200/60',
         badge: 'bg-black/15 text-slate-950 border-black/20',
         btn: 'bg-black/10 hover:bg-black/20 text-slate-950 border-black/20'
     };
@@ -197,7 +195,6 @@ const TransactionList: React.FC<TransactionListProps> = ({
             'MORADIA',
             'MARCIA BRITO',
             'MARCIA BISPO',
-            'CLAUDIO SILVA',
             'LILI TORRES',
             'REBECCA BRITO',
             'JADY',
@@ -225,7 +222,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
     }
 
     const formatDateHeader = (key: string) => {
-        if (key.includes('Distribuição') || key === 'MORADIA' || key === 'MARCIA BRITO' || key === 'MARCIA BISPO' || key === 'CLAUDIO SILVA' || key === 'LILI TORRES' || key === 'REBECCA BRITO' || key.includes('JADY') || key.includes('IAGO') || key === 'DÍVIDAS NA RUA' || key === 'AVULSO' || key === 'Sem Data') return key;
+        if (key.includes('Distribuição') || key === 'MORADIA' || key === 'MARCIA BRITO' || key === 'MARCIA BISPO' || key === 'LILI TORRES' || key === 'REBECCA BRITO' || key.includes('JADY') || key.includes('IAGO') || key === 'DÍVIDAS NA RUA' || key === 'AVULSO' || key === 'Sem Data') return key;
         const [year, month, day] = key.split('-');
         if (!year || !month || !day) return key;
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -288,12 +285,12 @@ const TransactionList: React.FC<TransactionListProps> = ({
                         onClick={() => toggleGroup(key)}
                     >
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                            <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider">
+                            <h3 className="text-sm sm:text-base font-black uppercase tracking-wider">
                                 {formatDateHeader(key)}
                             </h3>
                             
                             {/* TOTAL SOMA DA CATEGORIA - MESMA FONTE DO TÍTULO DA CATEGORIA */}
-                            <span className={`text-xs sm:text-sm font-black px-2.5 py-0.5 rounded-lg border shadow-sm tracking-tight ${groupColors.badge}`}>
+                            <span className={`text-xs sm:text-sm font-black px-3 py-1 rounded-xl border shadow-sm tracking-tight ${groupColors.badge}`}>
                                 {formatCurrency(groupTotalSum)}
                             </span>
 
@@ -347,12 +344,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
                     {isExpanded && (
                     <div className="flex flex-col gap-0">
                         {(() => {
-                            let items = groupItems;
-                            if (key.includes('IAGO')) {
-                                items = [...items].sort((a, b) => 
-                                    a.description.localeCompare(b.description, 'pt-BR', { sensitivity: 'base' })
-                                );
-                            }
+                            let items = [...groupItems].sort((a, b) => 
+                                a.description.localeCompare(b.description, 'pt-BR', { sensitivity: 'base' })
+                            );
                             return items.map(item => {
                             const isAllocation = key.includes('Distribuição');
                             const isSelected = selectedIds.includes(item.id);
@@ -421,11 +415,11 @@ const TransactionList: React.FC<TransactionListProps> = ({
                                                     onChange={(e) => onUpdate({ ...item, description: e.target.value })}
                                                     onClick={(e) => e.stopPropagation()}
                                                     rows={item.description.length > 28 ? 2 : 1}
-                                                    className={`w-full bg-transparent border-none p-0 focus:ring-0 font-black text-[11px] sm:text-base leading-tight resize-none overflow-hidden outline-none ${item.paid || item.skipped || item.isSuspended ? 'text-gray-400 line-through' : isAllocation ? 'text-amber-900' : 'text-slate-800'}`}
+                                                    className={`w-full bg-transparent border-none p-0 focus:ring-0 font-black text-sm sm:text-base lg:text-lg leading-tight resize-none overflow-hidden outline-none ${item.paid || item.skipped || item.isSuspended ? 'text-gray-400 line-through' : isAllocation ? 'text-amber-900' : 'text-slate-800'}`}
                                                 />
                                                 {item.isSuspended && (
-                                                    <span className="text-[8px] lg:text-xs font-black text-rose-500 uppercase tracking-tighter flex items-center gap-1">
-                                                        <FileWarning size={8} /> Suspensa {item.suspendedUntil ? `até ${item.suspendedUntil}` : 'indeterminado'}
+                                                    <span className="text-[10px] lg:text-xs font-black text-rose-500 uppercase tracking-tighter flex items-center gap-1">
+                                                        <FileWarning size={12} /> Suspensa {item.suspendedUntil ? `até ${item.suspendedUntil}` : 'indeterminado'}
                                                     </span>
                                                 )}
                                             </div>
@@ -439,7 +433,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                                                     <button
                                                         type="button"
                                                         onClick={(e) => {
-                                                            e.stopPropagation();
+                                                             e.stopPropagation();
                                                             onUpdate({ ...item, skipped: !item.skipped });
                                                         }}
                                                         className={`relative inline-flex items-center h-5 lg:h-6 w-9 lg:w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-all duration-300 ease-in-out focus:outline-none ${
@@ -462,7 +456,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                                                             )}
                                                         </span>
                                                     </button>
-                                                    <span className={`text-[9px] lg:text-[10px] font-black uppercase tracking-wider hidden sm:inline ${
+                                                    <span className={`text-[10px] lg:text-xs font-black uppercase tracking-wider hidden sm:inline ${
                                                         !item.skipped ? 'text-emerald-700' : 'text-slate-400 line-through'
                                                     }`}>
                                                         {!item.skipped ? 'ON' : 'OFF'}
@@ -471,42 +465,42 @@ const TransactionList: React.FC<TransactionListProps> = ({
 
                                                 {/* Valor R$ */}
                                                 <div className={`flex items-center gap-1 shrink-0 ${item.skipped ? 'opacity-40 line-through' : ''}`}>
-                                                    <span className={`text-[10px] lg:text-sm font-black opacity-50 ${item.paid || item.skipped ? 'text-gray-400' : 'text-slate-400'}`}>R$</span>
+                                                    <span className={`text-xs lg:text-sm font-black opacity-50 ${item.paid || item.skipped ? 'text-gray-400' : 'text-slate-400'}`}>R$</span>
                                                     <input 
-                                                        type="number"
+                                                        type="number" 
                                                         step="0.01"
                                                         disabled={item.skipped}
                                                         value={typeof item.amount === 'number' && !isNaN(item.amount) ? Math.round(item.amount * 100) / 100 : item.amount}
                                                         onChange={(e) => onUpdate({ ...item, amount: Math.round((parseFloat(e.target.value) || 0) * 100) / 100 })}
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className={`w-16 lg:w-28 bg-transparent border-none p-0 focus:ring-0 font-black text-xs lg:text-lg text-right outline-none tracking-tight ${item.paid || item.skipped ? 'text-gray-400' : isAllocation ? 'text-amber-900' : 'text-slate-900'}`}
+                                                        className={`w-24 sm:w-28 lg:w-32 bg-transparent border-none p-0 focus:ring-0 font-black text-sm sm:text-base lg:text-xl text-right outline-none tracking-tight ${item.paid || item.skipped ? 'text-gray-400' : isAllocation ? 'text-amber-900' : 'text-slate-900'}`}
                                                     />
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-1.5 lg:gap-2">
-                                            <div className={`flex items-center gap-1 px-2 py-0.5 lg:px-3 lg:py-1.5 rounded-lg text-[8px] lg:text-xs font-black uppercase tracking-wide ${getCategoryColor(item.category)} bg-opacity-50`}>
-                                                {React.cloneElement(getCategoryIcon(item.category) as React.ReactElement, { size: 12 })}
+                                            <div className={`flex items-center gap-1.5 px-2.5 py-1 lg:px-3 lg:py-1.5 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-wide ${getCategoryColor(item.category)} bg-opacity-50`}>
+                                                {React.cloneElement(getCategoryIcon(item.category) as React.ReactElement, { size: 14 })}
                                                 <span>{item.category}</span>
                                             </div>
                                             
                                             {item.skipped && (
-                                                <div className="px-2 py-0.5 lg:px-3 lg:py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1 shadow-sm font-black text-[8px] lg:text-xs uppercase">
-                                                    <PowerOff size={11} strokeWidth={3} />
+                                                <div className="px-2.5 py-1 lg:px-3 lg:py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1 shadow-sm font-black text-[10px] sm:text-xs uppercase">
+                                                    <PowerOff size={13} strokeWidth={3} />
                                                     <span>Desligado no mês</span>
                                                 </div>
                                             )}
                                             
                                             {item.dueDate && (
-                                                <div className="px-2 py-0.5 lg:px-3 lg:py-1.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1 shadow-sm">
-                                                    <span className="text-[8px] lg:text-xs font-black tracking-widest uppercase opacity-70">Dia</span>
-                                                    <span className="text-[10px] lg:text-sm font-black">{item.dueDate.split('-')[2]}</span>
+                                                <div className="px-2.5 py-1 lg:px-3 lg:py-1.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1 shadow-sm">
+                                                    <span className="text-[10px] sm:text-xs font-black tracking-widest uppercase opacity-70">Dia</span>
+                                                    <span className="text-xs sm:text-sm font-black">{item.dueDate.split('-')[2]}</span>
                                                 </div>
                                             )}
                                             {item.installments && (
-                                                <div className="px-2 py-0.5 lg:px-3 lg:py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center gap-1 shadow-sm">
-                                                    <span className="text-[8px] lg:text-xs font-black tracking-widest uppercase opacity-70">Parc.</span>
-                                                    <span className="text-[10px] lg:text-sm font-black">{item.installments.current === 0 ? 'Ñ' : item.installments.current}/{item.installments.total}</span>
+                                                <div className="px-2.5 py-1 lg:px-3 lg:py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center gap-1 shadow-sm">
+                                                    <span className="text-[10px] sm:text-xs font-black tracking-widest uppercase opacity-70">Parc.</span>
+                                                    <span className="text-xs sm:text-sm font-black">{item.installments.current === 0 ? 'Ñ' : item.installments.current}/{item.installments.total}</span>
                                                 </div>
                                             )}
                                         </div>

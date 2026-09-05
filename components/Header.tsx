@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Menu, ChevronLeft, ChevronRight, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { formatCurrency } from '../utils/financeUtils';
+import BankLogo from './BankLogo';
 
 interface HeaderProps {
     month: number;
@@ -45,11 +46,13 @@ const Header: React.FC<HeaderProps> = ({
 
     return (
         <header className="relative z-10 bg-gradient-to-b from-teal-600 via-teal-500/30 to-transparent pb-6 pt-4 rounded-b-[2.5rem] border-b border-emerald-900/10 mb-6">
-            {/* Header & Title */}
+            {/* Header & Bank Logo Lockup: Symbol on top + FINANÇAS BISPO DE ANDRADE underneath */}
             <div className="flex flex-col items-center pt-2 pb-4">
-                <h1 className="text-4xl lg:text-5xl font-black text-emerald-950 tracking-tighter drop-shadow-sm uppercase">
-                    FINANÇAS DA FAMÍLIA
-                </h1>
+                <BankLogo 
+                    size="md" 
+                    layout="stacked" 
+                    theme="emerald" 
+                />
             </div>
 
             {/* Greeting & Action Buttons Row */}
@@ -133,16 +136,21 @@ const Header: React.FC<HeaderProps> = ({
                              </div>
                          )}
                      </div>
-                     <div className="bg-emerald-600 rounded-xl p-1.5 lg:p-3 text-white shadow-md text-center overflow-hidden">
-                         <div className="text-[9px] lg:text-[11px] font-black uppercase text-white/70 truncate" title="Sofisa (Contas Fixas)">Sofisa (Ct. Fixas)</div>
-                         <div className="flex justify-center items-center">
-                            <span className="text-[10px] lg:text-sm font-black text-white/80">R$</span>
-                             <input 
-                                type="number" 
-                                value={parseFloat(bankReserves.sofisa.toFixed(2))}
-                                onChange={(e) => setBankReserves({...bankReserves, sofisa: Math.round(parseFloat(e.target.value) * 100) / 100 || 0})}
-                                className="bg-transparent text-sm lg:text-2xl font-black w-full text-center outline-none"
-                            />
+                     <div className="bg-emerald-600 rounded-xl p-1.5 lg:p-3 text-white shadow-md text-center overflow-hidden flex flex-col justify-between">
+                         <div>
+                             <div className="text-[9px] lg:text-[11px] font-black uppercase text-white/70 truncate" title="Sofisa (Poupança Protegida)">Sofisa (Poupança)</div>
+                             <div className="flex justify-center items-center">
+                                <span className="text-[10px] lg:text-sm font-black text-white/80">R$</span>
+                                 <input 
+                                    type="number" 
+                                    value={parseFloat(bankReserves.sofisa.toFixed(2))}
+                                    onChange={(e) => setBankReserves({...bankReserves, sofisa: Math.round(parseFloat(e.target.value) * 100) / 100 || 0})}
+                                    className="bg-transparent text-sm lg:text-2xl font-black w-full text-center outline-none"
+                                />
+                             </div>
+                         </div>
+                         <div className="text-[7.5px] lg:text-[9px] font-black uppercase tracking-tight text-emerald-100/95 leading-none mt-1" title="Poupança protegida • Não entra nas contas">
+                             🛡️ Poupança
                          </div>
                      </div>
                  </div>
