@@ -1891,12 +1891,16 @@ const App: React.FC = () => {
                 });
             }
 
-            // Ensure Aluguel and Internet are marked as paid in October 2026
+            // Ensure Aluguel, Internet, and Iago's values are marked as paid in October 2026
             cleanExpenses.forEach(e => {
                 const norm = e.description.toUpperCase().trim();
                 if (norm === 'ALUGUEL' || norm.includes('INTERNET')) {
                     e.paid = true;
                     if (!e.paidAt) e.paidAt = '2026-10-01';
+                }
+                if (e.group === 'IAGO (CARTÃO NUBANK)' || e.category === 'Iago' || norm.includes('IAGO')) {
+                    e.paid = true;
+                    if (!e.paidAt) e.paidAt = '2026-10-07';
                 }
             });
 
@@ -2238,7 +2242,7 @@ const App: React.FC = () => {
             // Remove Seguro do Carro (not to be paid this month)
             data.expenses = data.expenses.filter(e => !e.description.toUpperCase().includes('SEGURO DO CARRO'));
             
-            // Ensure Aluguel and Internet are marked as paid
+            // Ensure Aluguel, Internet, and Iago's values are marked as paid
             data.expenses = data.expenses.map(e => {
                 const norm = e.description.toUpperCase().trim();
                 if (norm === 'ALUGUEL' || norm.includes('INTERNET')) {
@@ -2246,6 +2250,13 @@ const App: React.FC = () => {
                         ...e,
                         paid: true,
                         paidAt: e.paidAt || '2026-10-01'
+                    };
+                }
+                if (e.group === 'IAGO (CARTÃO NUBANK)' || e.category === 'Iago' || norm.includes('IAGO')) {
+                    return {
+                        ...e,
+                        paid: true,
+                        paidAt: e.paidAt || '2026-10-07'
                     };
                 }
                 return e;
