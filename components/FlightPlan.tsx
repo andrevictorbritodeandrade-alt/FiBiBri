@@ -65,9 +65,9 @@ interface ThirdPartyDebt {
 
 const DEBT_ITEMS_CONFIG: ThirdPartyDebt[] = [
   // MARCIA BRITO
-  { name: 'Alinhamento do Carro', amount: 165.00, totalAmount: 330.00, installments: 2, startYear: 2026, startMonth: 7, card: 'MARCIA BRITO' },
+  { name: 'Alinhamento do Carro', amount: 165.00, totalAmount: 330.00, installments: 2, startYear: 2026, startMonth: 9, card: 'MARCIA BRITO' },
   { name: 'Empréstimo p/ Contas de Junho', amount: 486.00, totalAmount: 1944.00, installments: 4, startYear: 2026, startMonth: 6, card: 'MARCIA BRITO' },
-  { name: 'Faculdade da Marcelly', amount: 202.68, totalAmount: 2026.80, installments: 10, startYear: 2025, startMonth: 12, card: 'MARCIA BRITO' },
+  { name: 'Faculdade da Marcelly', amount: 202.68, totalAmount: 2026.80, installments: 10, startYear: 2026, startMonth: 1, card: 'MARCIA BRITO' },
   { name: 'Filhão Autopeças', amount: 40.00, totalAmount: 120.00, installments: 3, startYear: 2026, startMonth: 5, card: 'MARCIA BRITO' },
   { name: 'Kr Autopeças', amount: 41.57, totalAmount: 291.00, installments: 7, startYear: 2026, startMonth: 5, card: 'MARCIA BRITO' },
   { name: 'Mão de Obra do Davi', amount: 124.27, totalAmount: 372.82, installments: 3, startYear: 2026, startMonth: 5, card: 'MARCIA BRITO' },

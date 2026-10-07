@@ -1693,6 +1693,28 @@ const App: React.FC = () => {
                 });
             }
 
+            // Ensure Alinhamento do Carro parcela 2 de 2 (R$ 165,00) in Marcia Brito for October 2026
+            const alinhamentoOct = cleanExpenses.find(e => e.description.toUpperCase().includes('ALINHAMENTO DO CARRO') || e.description.toUpperCase().includes('ALINHAMENTO'));
+            if (alinhamentoOct) {
+                alinhamentoOct.description = 'ALINHAMENTO DO CARRO';
+                alinhamentoOct.amount = 165.00;
+                alinhamentoOct.category = 'Transporte';
+                alinhamentoOct.group = 'MARCIA BRITO';
+                alinhamentoOct.dueDate = alinhamentoOct.dueDate || '2026-10-12';
+                alinhamentoOct.installments = { current: 2, total: 2 };
+            } else {
+                cleanExpenses.push({
+                    id: 'fin_ALINHAMENTODOCARRO_2',
+                    description: 'ALINHAMENTO DO CARRO',
+                    amount: 165.00,
+                    category: 'Transporte',
+                    paid: false,
+                    dueDate: '2026-10-12',
+                    installments: { current: 2, total: 2 },
+                    group: 'MARCIA BRITO'
+                });
+            }
+
             // Ensure Jady Empréstimo Viagem Salvador parcela 3/3
             const jadyLoan = cleanExpenses.find(e => e.description.toUpperCase().includes('VIAGEM DE SALVADOR') || (e.description.toUpperCase().includes('SALVADOR') && (e.group === 'JADY' || e.category === 'Jady')));
             if (jadyLoan) {
@@ -1710,6 +1732,28 @@ const App: React.FC = () => {
                     dueDate: '2026-10-10',
                     installments: { current: 3, total: 3 },
                     group: 'JADY'
+                });
+            }
+
+            // Ensure Faculdade da Marcelly parcela 10 de 10 (R$ 202.68) in Marcia Brito for October 2026
+            const faculdadeOct = cleanExpenses.find(e => e.description.toUpperCase().includes('FACULDADE DA MARCELLY') || e.description.toUpperCase().includes('FACULDADE'));
+            if (faculdadeOct) {
+                faculdadeOct.description = 'FACULDADE DA MARCELLY';
+                faculdadeOct.amount = 202.68;
+                faculdadeOct.category = 'Educação';
+                faculdadeOct.group = 'MARCIA BRITO';
+                faculdadeOct.dueDate = faculdadeOct.dueDate || '2026-10-12';
+                faculdadeOct.installments = { current: 10, total: 10 };
+            } else {
+                cleanExpenses.push({
+                    id: 'fin_FACULDADEDAMARCELLY_10',
+                    description: 'FACULDADE DA MARCELLY',
+                    amount: 202.68,
+                    category: 'Educação',
+                    paid: false,
+                    dueDate: '2026-10-12',
+                    installments: { current: 10, total: 10 },
+                    group: 'MARCIA BRITO'
                 });
             }
 
@@ -2188,6 +2232,53 @@ const App: React.FC = () => {
         data.expenses = data.expenses.map(applyFinalPreservation);
         data.avulsosItems = data.avulsosItems.map(applyFinalPreservation);
         data.incomes = data.incomes.map(applyFinalPreservation);
+
+        // Explicit Post-Preservation Systemic Rule for October 2026
+        if (year === 2026 && month === 10) {
+            // Remove Seguro do Carro (not to be paid this month)
+            data.expenses = data.expenses.filter(e => !e.description.toUpperCase().includes('SEGURO DO CARRO'));
+            
+            // Ensure Aluguel and Internet are marked as paid
+            data.expenses = data.expenses.map(e => {
+                const norm = e.description.toUpperCase().trim();
+                if (norm === 'ALUGUEL' || norm.includes('INTERNET')) {
+                    return {
+                        ...e,
+                        paid: true,
+                        paidAt: e.paidAt || '2026-10-01'
+                    };
+                }
+                return e;
+            });
+
+            // Ensure Alinhamento do Carro with parcela 2 de 2 in Marcia Brito
+            const alinhamentoIdx = data.expenses.findIndex(e => {
+                const norm = e.description.toUpperCase().trim();
+                return norm.includes('ALINHAMENTO DO CARRO') || norm.includes('ALINHAMENTO');
+            });
+            if (alinhamentoIdx >= 0) {
+                data.expenses[alinhamentoIdx] = {
+                    ...data.expenses[alinhamentoIdx],
+                    description: 'ALINHAMENTO DO CARRO',
+                    amount: 165.00,
+                    category: 'Transporte',
+                    group: 'MARCIA BRITO',
+                    dueDate: data.expenses[alinhamentoIdx].dueDate || '2026-10-12',
+                    installments: { current: 2, total: 2 }
+                };
+            } else {
+                data.expenses.push({
+                    id: 'fin_ALINHAMENTODOCARRO_2',
+                    description: 'ALINHAMENTO DO CARRO',
+                    amount: 165.00,
+                    category: 'Transporte',
+                    paid: false,
+                    dueDate: '2026-10-12',
+                    installments: { current: 2, total: 2 },
+                    group: 'MARCIA BRITO'
+                });
+            }
+        }
 
         // Global deduplication to remove duplicate Iago items caused by trailing "(IAGO)"
         data.expenses = data.expenses.map(e => {
