@@ -98,6 +98,7 @@ const DEBT_ITEMS_CONFIG: ThirdPartyDebt[] = [
   { name: 'Cidadania Portuguesa', amount: 140.00, totalAmount: 5180.00, installments: 37, startYear: 2024, startMonth: 11, card: 'REBECCA BRITO' },
 
   // JADY
+  { name: 'Sandália', amount: 50.00, totalAmount: 100.00, installments: 2, startYear: 2026, startMonth: 11, card: 'JADY' },
   { name: 'Empréstimo para Viagem de Salvador', amount: 395.26, totalAmount: 1185.78, installments: 3, startYear: 2026, startMonth: 8, card: 'JADY' },
   { name: 'Compra de Maquiagem', amount: 116.00, totalAmount: 232.00, installments: 2, startYear: 2026, startMonth: 6, card: 'JADY' },
   { name: 'Compra de Tênis', amount: 309.99, totalAmount: 619.98, installments: 2, startYear: 2026, startMonth: 6, card: 'JADY' },

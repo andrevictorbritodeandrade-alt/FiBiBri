@@ -90,6 +90,14 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         );
     }
 
+    if (year === 2026 && month === 10) {
+        newIncomes.push(
+            { id: `inc_eleicao_andre_${year}_${month}`, description: 'ALIMENTAÇÃO ELEIÇÃO (ANDRÉ)', amount: 65.00, paid: true, date: '2026-10-06', dueDate: '2026-10-06', category: 'Renda Extra' },
+            { id: `inc_eleicao_marcelly_${year}_${month}`, description: 'ALIMENTAÇÃO ELEIÇÃO (MARCELLY)', amount: 65.00, paid: true, date: '2026-10-06', dueDate: '2026-10-06', category: 'Renda Extra' },
+            { id: `inc_assessoria_vanda_${year}_${month}`, description: 'ASSESSORIA (VANDA CARVALHO)', amount: 150.00, paid: true, date: '2026-10-07', dueDate: '2026-10-07', category: 'Renda Extra' }
+        );
+    }
+
     if (isBeforeJune2026) {
         newIncomes.push(
             { id: `inc_mum_a_${year}_${month}`, description: 'MUMBUCA ANDRE', amount: 598.00, paid: isJan2026, date: mumbucaDate, category: 'Mumbuca' }
@@ -192,9 +200,9 @@ export const generateMonthData = (year: number, month: number): MonthData => {
             return;
         }
 
-        // Exclude Seguro do Carro for June 2026 as user is paying late with late June/July funds
+        // Exclude Seguro do Carro for June 2026 as user is paying late with late June/July funds, and October 2026 as user does not have to pay
         const isSeguroCarro = c.description.toUpperCase() === "SEGURO DO CARRO";
-        if (year === 2026 && month === 6 && isSeguroCarro) {
+        if (year === 2026 && (month === 6 || month === 10) && isSeguroCarro) {
             return;
         }
 
@@ -258,17 +266,18 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         }
 
         const isFutureMonth = (year === 2026 && month >= 7) || (year > 2026);
+        const isOct2026PaidItem = (year === 2026 && month === 10) && (c.description.toUpperCase().includes("ALUGUEL") || c.description.toUpperCase().includes("INTERNET"));
 
         newExpenses.push({
             id: `exp_${year}_${month}_${c.description.replace(/\s/g, '')}`,
             description: c.description,
             amount: finalAmount,
             category: c.category,
-            paid: isFutureMonth ? false : (isPaid || (c.amount === 0 && (month >= 4))), // Auto-pay zeroed items except for future months
+            paid: isOct2026PaidItem ? true : (isFutureMonth ? false : (isPaid || (c.amount === 0 && (month >= 4)))), // Auto-pay zeroed items except for future months
             dueDate: `${year}-${month.toString().padStart(2,'0')}-${c.day.toString().padStart(2,'0')}`,
             group: c.group,
             isSuspended: isSuspended,
-            paidAt: isFutureMonth ? undefined : paidAtStr
+            paidAt: isOct2026PaidItem ? `${year}-10-01` : (isFutureMonth ? undefined : paidAtStr)
         });
     });
 
@@ -336,6 +345,7 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { desc: "REMÉDIO PARA CUPIM", totalAmount: 37.00, cat: "Saúde", day: 28, installments: 1, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
         { desc: "REMÉDIOS (MARCIA BRITO)", totalAmount: 246.09, cat: "Saúde", day: 28, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
         { desc: "RENEGOCIAR CARREFOUR", totalAmount: 5000.00, cat: "Dívidas", day: 12, installments: 16, sY: 2025, sM: 12, group: 'MARCIA BRITO' },
+        { desc: "SANDÁLIA", totalAmount: 100.00, cat: "Jady", day: 10, installments: 2, sY: 2026, sM: 11, group: 'JADY' },
         { desc: "SEGUNDO CARRO ALUGADO", totalAmount: 471.42, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' }
     ];
 

@@ -1629,7 +1629,7 @@ const App: React.FC = () => {
             
             // Build map of user paid statuses
             const userPaidMap = new Map<string, { paid: boolean, paidAt?: string | null, userModifiedPaid?: boolean, skipped?: boolean }>();
-            [...data.expenses, ...data.avulsosItems].forEach(item => {
+            [...data.expenses, ...data.avulsosItems, ...(data.incomes || [])].forEach(item => {
                 const normDesc = item.description.toUpperCase().trim();
                 userPaidMap.set(normDesc, { paid: item.paid, paidAt: item.paidAt, userModifiedPaid: item.userModifiedPaid, skipped: item.skipped });
             });
@@ -1847,10 +1847,20 @@ const App: React.FC = () => {
                 });
             }
 
-            data.expenses = cleanExpenses;
+            // Ensure Aluguel and Internet are marked as paid in October 2026
+            cleanExpenses.forEach(e => {
+                const norm = e.description.toUpperCase().trim();
+                if (norm === 'ALUGUEL' || norm.includes('INTERNET')) {
+                    e.paid = true;
+                    if (!e.paidAt) e.paidAt = '2026-10-01';
+                }
+            });
+
+            // Exclude Seguro do Carro for October 2026 (não tem que pagar este mês)
+            data.expenses = cleanExpenses.filter(e => !e.description.toUpperCase().trim().includes('SEGURO DO CARRO'));
 
             // Incomes for October 2026
-            data.incomes = canonicalOct.incomes.map(inc => {
+            const cleanIncomes: Transaction[] = canonicalOct.incomes.map(inc => {
                 const norm = inc.description.toUpperCase().trim();
                 const userState = userPaidMap.get(norm);
                 if (userState) {
@@ -1858,6 +1868,15 @@ const App: React.FC = () => {
                 }
                 return inc;
             });
+
+            (data.incomes || []).forEach(inc => {
+                const norm = inc.description.toUpperCase().trim();
+                if (!cleanIncomes.some(c => c.description.toUpperCase().trim() === norm || c.id === inc.id)) {
+                    cleanIncomes.push(inc);
+                }
+            });
+
+            data.incomes = cleanIncomes;
 
             // Bank reserves default for October 2026
             if (!data.bankReserves || data.bankReserves.santander === undefined) {
@@ -1971,6 +1990,40 @@ const App: React.FC = () => {
             } else {
                 data.expenses = data.expenses.filter(e => !(e.description.toUpperCase().includes('NORDESTE') && e.group === 'LILI TORRES'));
             }
+        }
+
+        // Ensure Sandália (Jady) - 2 installments of R$ 50,00 in Nov 2026 (1/2) and Dec 2026 (2/2)
+        if (year === 2026 && (month === 11 || month === 12)) {
+            const current = month === 11 ? 1 : 2;
+            const sandaliaJady = data.expenses.find(e => 
+                (e.description.toUpperCase().includes('SANDÁLIA') || e.description.toUpperCase().includes('SANDALIA')) && 
+                (e.group === 'JADY' || e.category === 'Jady')
+            );
+            if (sandaliaJady) {
+                sandaliaJady.description = 'SANDÁLIA';
+                sandaliaJady.amount = 50.00;
+                sandaliaJady.category = 'Jady';
+                sandaliaJady.group = 'JADY';
+                sandaliaJady.installments = { current, total: 2 };
+                sandaliaJady.dueDate = `2026-${month.toString().padStart(2, '0')}-10`;
+            } else {
+                data.expenses.push({
+                    id: `fin_SANDÁLIA_JADY_${current}`,
+                    description: 'SANDÁLIA',
+                    amount: 50.00,
+                    category: 'Jady',
+                    paid: false,
+                    dueDate: `2026-${month.toString().padStart(2, '0')}-10`,
+                    installments: { current, total: 2 },
+                    group: 'JADY'
+                });
+            }
+        } else {
+            // Ensure no stray Sandália for JADY in other months
+            data.expenses = data.expenses.filter(e => !(
+                (e.description.toUpperCase().includes('SANDÁLIA') || e.description.toUpperCase().includes('SANDALIA')) && 
+                (e.group === 'JADY' || e.category === 'Jady')
+            ));
         }
 
         // Ensure EMPRÉSTIMO COM LILI is correctly sequenced for November and December 2026
