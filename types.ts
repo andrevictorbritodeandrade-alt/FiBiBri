@@ -14,6 +14,7 @@ export interface Transaction {
   paid: boolean;
   date?: string;
   dueDate?: string;
+  purchaseDate?: string; // Date when purchase was made (e.g. "2026-09-29")
   installments?: InstallmentInfo;
   group?: string; // New field for grouping (Fixed vs Variable)
   paidAt?: string;
@@ -66,6 +67,7 @@ export interface MonthData {
   goals: Goal[];
   bankAccounts: BankAccount[];
   bankReserves?: { santander: number; inter: number; sofisa: number };
+  monthlyReserveGoal?: number;
   checkIn?: { isDone: boolean; date: string | null };
   debtSettlements?: DebtSettlement[]; // New field for at-sight debt planning
   dailyBalances?: DailyBalanceLog[]; // New field for daily tangible physical balances tracking

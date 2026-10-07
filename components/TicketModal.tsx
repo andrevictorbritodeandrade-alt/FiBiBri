@@ -66,6 +66,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
             pixelRatio: 2.5,
             backgroundColor: '#ffffff',
             cacheBust: true,
+            skipFonts: true,
             width: width,
             height: height,
             canvasWidth: width * 2.5,
@@ -91,7 +92,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
             link.download = getFileName();
             link.href = dataUrl;
             link.click();
-            showToast('✓ Comprovante completo salvo com sucesso!');
+            showToast('✓ Comprovante salvo com sucesso!');
         } catch (err) {
             console.error('Erro ao gerar comprovante:', err);
             showToast('Erro ao gerar imagem. Tente novamente.');
@@ -117,7 +118,8 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                 `*Referência:* ${monthName}/${currentYear}\n\n` +
                 selectedTransactions.map(t => {
                     const inst = t.installments ? ` (Parc. ${t.installments.current}/${t.installments.total})` : '';
-                    return `• ${t.description}${inst}: ${formatCurrency(t.amount)}`;
+                    const purchase = t.purchaseDate ? ` [Compra: ${t.purchaseDate.includes('-') ? `${t.purchaseDate.split('-')[2]}/${t.purchaseDate.split('-')[1]}` : t.purchaseDate}]` : '';
+                    return `• ${t.description}${inst}${purchase}: ${formatCurrency(t.amount)}`;
                 }).join('\n') +
                 `\n\n*VALOR TOTAL:* ${formatCurrency(totalSum)}`;
 
@@ -148,7 +150,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn overflow-y-auto">
             <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[94vh]">
                 
                 {/* Header Modal Bar */}
@@ -180,7 +182,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                         <User size={15} className="text-slate-400" />
                         <input 
                             type="text"
-                            placeholder="Nome do Destinatário (Ex: Rebecca Brito, Marcia...)"
+                            placeholder="Nome do Destinatário (Ex: Rebecca Brito, Marcia, Iago...)"
                             value={recipientName}
                             onChange={(e) => setRecipientName(e.target.value)}
                             className="bg-transparent text-xs sm:text-sm font-semibold text-white placeholder-slate-500 w-full outline-none"
@@ -188,18 +190,18 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                     </div>
                 </div>
 
-                {/* Printable Bank Receipt View (CLARO / PADRÃO PIX BANCÁRIO) */}
-                <div className="p-3 sm:p-4 overflow-y-auto flex-1 bg-slate-950 flex justify-center">
+                {/* Printable Bank Receipt View (BRANCO / OFICIAL BANCÁRIO) */}
+                <div className="p-3 sm:p-4 overflow-y-auto flex-1 bg-slate-950/60 flex justify-center">
                     <div 
                         ref={ticketRef} 
-                        className="w-full max-w-[380px] bg-white text-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-200 font-sans select-none"
+                        className="w-full max-w-[380px] bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 font-sans select-none"
                     >
                         {/* Top Bank Green Bar */}
-                        <div className="h-2 bg-emerald-600 w-full" />
+                        <div className="h-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 w-full" />
 
                         {/* Bank PIX Header */}
-                        <div className="px-6 pt-5 pb-4 text-center border-b border-slate-100">
-                            <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-emerald-50 border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shadow-sm">
+                        <div className="px-6 pt-5 pb-4 text-center border-b border-slate-100 bg-emerald-50/40">
+                            <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-emerald-100 border-2 border-emerald-500 text-emerald-600 flex items-center justify-center shadow-md shadow-emerald-500/10">
                                 <CheckCircle2 size={26} strokeWidth={2.5} />
                             </div>
                             <h2 className="text-xs font-black uppercase tracking-widest text-emerald-700">
@@ -210,11 +212,11 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                             </p>
 
                             {/* Total Amount Big Display */}
-                            <div className="mt-4 pt-3 pb-2 bg-slate-50 rounded-xl border border-slate-200/80">
+                            <div className="mt-4 pt-3 pb-2 bg-white rounded-xl border border-slate-200 shadow-sm">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
                                     Valor Total da Conta
                                 </span>
-                                <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-mono">
+                                <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                                     {formatCurrency(totalSum)}
                                 </span>
                             </div>
@@ -241,10 +243,10 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                             {/* Detalhamento das Contas / Parcelas */}
                             <div className="pt-1">
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
                                         Contas e Parcelas ({selectedTransactions.length})
                                     </span>
-                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
                                         Valor
                                     </span>
                                 </div>
@@ -253,20 +255,25 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                                     {selectedTransactions.map((item, idx) => (
                                         <div 
                                             key={item.id || idx}
-                                            className="p-2.5 rounded-lg bg-slate-50/80 border border-slate-200/70 flex justify-between items-center gap-2"
+                                            className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 flex justify-between items-center gap-2 shadow-2xs"
                                         >
                                             <div className="min-w-0 flex-1">
                                                 <div className="font-bold text-slate-900 text-xs truncate">
                                                     {item.description}
                                                 </div>
-                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
                                                     {item.installments ? (
-                                                        <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-black">
-                                                            Parcela {item.installments.current} de {item.installments.total}
+                                                        <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-black">
+                                                             Parc. {item.installments.current}/{item.installments.total}
                                                         </span>
                                                     ) : (
                                                         <span className="inline-block px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-semibold">
                                                             Parcela Única
+                                                        </span>
+                                                    )}
+                                                    {item.purchaseDate && (
+                                                        <span className="inline-block px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-300 text-[10px] font-black">
+                                                            Compra: {item.purchaseDate.includes('-') ? `${item.purchaseDate.split('-')[2]}/${item.purchaseDate.split('-')[1]}` : item.purchaseDate}
                                                         </span>
                                                     )}
                                                     {(item.dueDate || item.day) && (
@@ -278,7 +285,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                                             </div>
 
                                             <div className="text-right shrink-0">
-                                                <span className="font-black text-slate-900 font-mono text-xs sm:text-sm">
+                                                <span className="font-black text-slate-900 text-xs sm:text-sm">
                                                     {formatCurrency(item.amount)}
                                                 </span>
                                             </div>
@@ -290,10 +297,10 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                             {/* Resumo Final */}
                             <div className="pt-2 border-t-2 border-dashed border-slate-200">
                                 <div className="flex justify-between items-center py-1">
-                                    <span className="font-black text-slate-900 text-xs uppercase tracking-tight">
+                                    <span className="font-black text-slate-700 text-xs uppercase tracking-tight">
                                         Total a Pagar
                                     </span>
-                                    <span className="font-black text-emerald-700 font-mono text-base">
+                                    <span className="font-black text-emerald-700 text-base">
                                         {formatCurrency(totalSum)}
                                     </span>
                                 </div>
@@ -302,12 +309,12 @@ export const TicketModal: React.FC<TicketModalProps> = ({
 
                         {/* PIX Security & Authentication Footer */}
                         <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 text-[10px] text-slate-500 space-y-1">
-                            <div className="flex justify-between items-center font-mono text-[9px] text-slate-400">
+                            <div className="flex justify-between items-center text-[9px] text-slate-400">
                                 <span>Autenticação:</span>
                                 <span className="font-bold text-slate-600 truncate max-w-[200px]">{authCode}</span>
                             </div>
-                            <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
-                                <div className="flex items-center gap-1 text-emerald-600 font-bold">
+                            <div className="flex items-center justify-between pt-1 border-t border-slate-200">
+                                <div className="flex items-center gap-1 text-emerald-700 font-bold">
                                     <ShieldCheck size={13} />
                                     <span>Comprovante Oficial Finanças</span>
                                 </div>

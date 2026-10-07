@@ -275,6 +275,9 @@ export const generateMonthData = (year: number, month: number): MonthData => {
     // Consolidate avulsos below
     // 2. INSTALLMENT EXPENSES
     const finiteConfig = [
+        { desc: "ABASTECIMENTO (19/09)", totalAmount: 307.46, cat: "Iago", day: 7, installments: 1, sY: 2026, sM: 10, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-19' },
+        { desc: "ABASTECIMENTO (29/09)", totalAmount: 342.24, cat: "Iago", day: 7, installments: 1, sY: 2026, sM: 10, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-29' },
+        { desc: "CANETA EMAGRECEDORA (DROGARAIA)", totalAmount: 490.00, cat: "Iago", day: 7, installments: 1, sY: 2026, sM: 10, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-29' },
         { desc: "ABASTECIMENTO 1", totalAmount: 275.00, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ABASTECIMENTO 2", totalAmount: 150.00, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ACRÉSCIMO PASSAGEM AÉREA", totalAmount: 240.00, cat: "Lazer", day: 7, installments: 2, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
@@ -299,6 +302,7 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { desc: "SANDÁLIAS (LILI)", totalAmount: 292.59, cat: "Roupas", day: 4, installments: 3, sY: 2026, sM: 10, group: 'LILI TORRES' },
         { desc: "COMPRAS GUANABARA", totalAmount: 923.54, cat: "Alimentação", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "CONSERTO DO CARRO DE OUTUBRO", totalAmount: 1447.00, cat: "Transporte", day: 12, installments: 4, sY: 2025, sM: 11, group: 'MARCIA BRITO' },
+        { desc: "CONSERTO DO CELULAR", totalAmount: 220.00, cat: "Iago", day: 7, installments: 2, sY: 2026, sM: 10, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "DENTISTA", totalAmount: 750.00, cat: "Saúde", day: 12, installments: 3, sY: 2026, sM: 9, group: 'MARCIA BRITO' },
         { desc: "DIÁRIA DE PEDREIRO", totalAmount: 160.00, cat: "Moradia", day: 12, installments: 1, sY: 2026, sM: 9, group: 'MARCIA BRITO' },
         { desc: "EMPRÉSTIMO COM LILI", totalAmount: 4000.00, cat: "Empréstimos", day: 4, installments: 5, sY: 2026, sM: 7, group: 'LILI TORRES' },
@@ -384,6 +388,7 @@ export const generateMonthData = (year: number, month: number): MonthData => {
                 paid: isPaid,
                 skipped: (f.desc === "EMPRÉSTIMO COM LILI" && year === 2026 && month === 10) ? true : undefined,
                 dueDate: `${year}-${month.toString().padStart(2,'0')}-${f.day.toString().padStart(2,'0')}`,
+                purchaseDate: (f as any).purchaseDate || undefined,
                 installments: inst,
                 group: f.group
             });

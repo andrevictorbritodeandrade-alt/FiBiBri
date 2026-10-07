@@ -18,7 +18,7 @@ import { INITIAL_SEPTEMBER_AVULSO_TRANSACTIONS } from './data/avulsoData';
 import { db, auth, isConfigured, onAuthStateChanged, signInAnonymously } from './services/firebaseConfig';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { FAMILY_ID } from './constants';
-import { Target, Plus, ShoppingBag, User, Users, ArrowRight, Plane, Wallet, PiggyBank, Home as HomeIcon, Palmtree, Heart, Car, GraduationCap, MoreHorizontal, TrendingUp, ShoppingCart, FileWarning, CreditCard, Shirt, Landmark } from 'lucide-react';
+import { Target, Plus, ShoppingBag, User, Users, ArrowRight, Plane, Wallet, PiggyBank, Home as HomeIcon, Palmtree, Heart, Car, GraduationCap, MoreHorizontal, TrendingUp, ShoppingCart, FileWarning, CreditCard, Shirt, Landmark, Clock, Calendar, Check, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from './utils/financeUtils';
 
 enum OperationType {
@@ -1139,7 +1139,7 @@ const App: React.FC = () => {
         }
 
         if ((year === 2026 && month >= 8) || (year === 2027 && month === 1)) {
-            const addOrUpdateIagoExpense = (description: string, amount: number, idSuffix: string, installments: any, category: string = "Lazer", matchPattern?: string) => {
+            const addOrUpdateIagoExpense = (description: string, amount: number, idSuffix: string, installments: any, category: string = "Lazer", matchPattern?: string, purchaseDate?: string) => {
                 const searchPattern = (matchPattern || description).toUpperCase();
                 const index = data.expenses.findIndex(e => e.description.toUpperCase().includes(searchPattern));
                 const fullName = description.replace(' (IAGO)', '');
@@ -1151,6 +1151,7 @@ const App: React.FC = () => {
                         category: category,
                         paid: false,
                         dueDate: `${year}-${month.toString().padStart(2,'0')}-07`,
+                        purchaseDate: purchaseDate,
                         installments: installments,
                         group: 'IAGO (CARTÃO NUBANK)'
                     });
@@ -1162,6 +1163,7 @@ const App: React.FC = () => {
                         category: category,
                         installments: installments,
                         dueDate: `${year}-${month.toString().padStart(2,'0')}-07`,
+                        purchaseDate: purchaseDate || data.expenses[index].purchaseDate,
                         group: 'IAGO (CARTÃO NUBANK)'
                     };
                 }
@@ -1207,6 +1209,15 @@ const App: React.FC = () => {
                 }
                 addOrUpdateIagoExpense("CLAROFLEX ANDRÉ", 59.90, "claroflex_andre", null, "Moradia", "CLAROFLEX ANDR");
                 addOrUpdateIagoExpense("CLAROFLEX MARCELLY", 44.90, "claroflex_marcelly", null, "Moradia", "CLAROFLEX MARCELLY");
+
+                if (year === 2026 && month === 10) {
+                    addOrUpdateIagoExpense("CONSERTO DO CELULAR", 110.00, "conserto_celular", { current: 1, total: 2 }, "Iago", "CONSERTO DO CELULAR");
+                    addOrUpdateIagoExpense("ABASTECIMENTO (19/09)", 307.46, "abastecimento_1909", null, "Iago", "ABASTECIMENTO (19/09)", "2026-09-19");
+                    addOrUpdateIagoExpense("ABASTECIMENTO (29/09)", 342.24, "abastecimento_2909", null, "Iago", "ABASTECIMENTO (29/09)", "2026-09-29");
+                    addOrUpdateIagoExpense("CANETA EMAGRECEDORA (DROGARAIA)", 490.00, "caneta_emagrecedora", null, "Iago", "CANETA EMAGRECEDORA", "2026-09-29");
+                } else if (year === 2026 && month === 11) {
+                    addOrUpdateIagoExpense("CONSERTO DO CELULAR", 110.00, "conserto_celular", { current: 2, total: 2 }, "Iago", "CONSERTO DO CELULAR");
+                }
             }
             
             // Cleanup old variables and requested removals
@@ -1743,6 +1754,99 @@ const App: React.FC = () => {
                 });
             }
 
+            // Ensure Conserto do Celular (parcela 1 de 2, R$ 110,00) and Abastecimento (R$ 310,00) for Iago in October 2026
+            const consertoCelularOct = cleanExpenses.find(e => e.description.toUpperCase().includes('CONSERTO DO CELULAR') || e.description.toUpperCase().includes('CONSERTO CELULAR'));
+            if (consertoCelularOct) {
+                consertoCelularOct.amount = 110.00;
+                consertoCelularOct.category = 'Iago';
+                consertoCelularOct.group = 'IAGO (CARTÃO NUBANK)';
+                consertoCelularOct.installments = { current: 1, total: 2 };
+                consertoCelularOct.dueDate = '2026-10-07';
+            } else {
+                cleanExpenses.push({
+                    id: 'exp_conserto_celular_iago_2026_10',
+                    description: 'CONSERTO DO CELULAR',
+                    amount: 110.00,
+                    category: 'Iago',
+                    paid: false,
+                    dueDate: '2026-10-07',
+                    installments: { current: 1, total: 2 },
+                    group: 'IAGO (CARTÃO NUBANK)'
+                });
+            }
+
+            // Remove obsolete generic ABASTECIMENTO if present
+            const obsoleteAbastIdx = cleanExpenses.findIndex(e => e.description.toUpperCase().trim() === 'ABASTECIMENTO' && (e.group?.includes('IAGO') || e.category === 'Iago'));
+            if (obsoleteAbastIdx >= 0) {
+                cleanExpenses.splice(obsoleteAbastIdx, 1);
+            }
+
+            // Abastecimento 19/09 (R$ 307,46)
+            const abast19 = cleanExpenses.find(e => e.description.toUpperCase().includes('19/09') || (e.description.toUpperCase().includes('ABASTECIMENTO') && e.amount === 307.46));
+            if (abast19) {
+                abast19.description = 'ABASTECIMENTO (19/09)';
+                abast19.amount = 307.46;
+                abast19.category = 'Iago';
+                abast19.group = 'IAGO (CARTÃO NUBANK)';
+                abast19.dueDate = '2026-10-07';
+                abast19.purchaseDate = '2026-09-19';
+            } else {
+                cleanExpenses.push({
+                    id: 'exp_abastecimento_1909_iago_2026_10',
+                    description: 'ABASTECIMENTO (19/09)',
+                    amount: 307.46,
+                    category: 'Iago',
+                    paid: false,
+                    dueDate: '2026-10-07',
+                    purchaseDate: '2026-09-19',
+                    group: 'IAGO (CARTÃO NUBANK)'
+                });
+            }
+
+            // Abastecimento 29/09 (R$ 342,24)
+            const abast29 = cleanExpenses.find(e => e.description.toUpperCase().includes('29/09') && e.description.toUpperCase().includes('ABASTECIMENTO'));
+            if (abast29) {
+                abast29.description = 'ABASTECIMENTO (29/09)';
+                abast29.amount = 342.24;
+                abast29.category = 'Iago';
+                abast29.group = 'IAGO (CARTÃO NUBANK)';
+                abast29.dueDate = '2026-10-07';
+                abast29.purchaseDate = '2026-09-29';
+            } else {
+                cleanExpenses.push({
+                    id: 'exp_abastecimento_2909_iago_2026_10',
+                    description: 'ABASTECIMENTO (29/09)',
+                    amount: 342.24,
+                    category: 'Iago',
+                    paid: false,
+                    dueDate: '2026-10-07',
+                    purchaseDate: '2026-09-29',
+                    group: 'IAGO (CARTÃO NUBANK)'
+                });
+            }
+
+            // Caneta Emagrecedora DrogaRaia (R$ 490,00 - 29/09)
+            const canetaDrogaRaia = cleanExpenses.find(e => e.description.toUpperCase().includes('CANETA') || e.description.toUpperCase().includes('DROGARAIA') || e.amount === 490.00);
+            if (canetaDrogaRaia) {
+                canetaDrogaRaia.description = 'CANETA EMAGRECEDORA (DROGARAIA)';
+                canetaDrogaRaia.amount = 490.00;
+                canetaDrogaRaia.category = 'Iago';
+                canetaDrogaRaia.group = 'IAGO (CARTÃO NUBANK)';
+                canetaDrogaRaia.dueDate = '2026-10-07';
+                canetaDrogaRaia.purchaseDate = '2026-09-29';
+            } else {
+                cleanExpenses.push({
+                    id: 'exp_caneta_emagrecedora_iago_2026_10',
+                    description: 'CANETA EMAGRECEDORA (DROGARAIA)',
+                    amount: 490.00,
+                    category: 'Iago',
+                    paid: false,
+                    dueDate: '2026-10-07',
+                    purchaseDate: '2026-09-29',
+                    group: 'IAGO (CARTÃO NUBANK)'
+                });
+            }
+
             data.expenses = cleanExpenses;
 
             // Incomes for October 2026
@@ -1888,6 +1992,26 @@ const App: React.FC = () => {
                     dueDate: '2026-11-04',
                     installments: { current: 4, total: 5 },
                     group: 'LILI TORRES'
+                });
+            }
+
+            const consertoCelularNov = data.expenses.find(e => e.description.toUpperCase().includes('CONSERTO DO CELULAR') || e.description.toUpperCase().includes('CONSERTO CELULAR'));
+            if (consertoCelularNov) {
+                consertoCelularNov.amount = 110.00;
+                consertoCelularNov.category = 'Iago';
+                consertoCelularNov.group = 'IAGO (CARTÃO NUBANK)';
+                consertoCelularNov.installments = { current: 2, total: 2 };
+                consertoCelularNov.dueDate = '2026-11-07';
+            } else {
+                data.expenses.push({
+                    id: 'exp_conserto_celular_iago_2026_11',
+                    description: 'CONSERTO DO CELULAR',
+                    amount: 110.00,
+                    category: 'Iago',
+                    paid: false,
+                    dueDate: '2026-11-07',
+                    installments: { current: 2, total: 2 },
+                    group: 'IAGO (CARTÃO NUBANK)'
                 });
             }
         }
@@ -2471,6 +2595,61 @@ const App: React.FC = () => {
         return 'from-slate-700 to-slate-900';
     };
 
+    // Próximas 3 contas a vencer nos próximos 7 dias para a tela de Visão Geral (Planejamento Imediato)
+    const upcomingSevenDaysBills = useMemo(() => {
+        if (!monthData) return [];
+
+        const now = new Date();
+        const isCurrentCalendarMonth = (currentYear === now.getFullYear() && currentMonth === (now.getMonth() + 1));
+        const refDate = isCurrentCalendarMonth
+            ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
+            : new Date(currentYear, currentMonth - 1, 1);
+        refDate.setHours(0, 0, 0, 0);
+
+        const currentMonthStr = `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
+        const isExcluded = (t: Transaction) => {
+            if (t.skipped) return true;
+            if (!t.isSuspended) return false;
+            if (!t.suspendedUntil) return true;
+            return currentMonthStr < t.suspendedUntil;
+        };
+
+        const unpaid = [
+            ...(monthData.expenses || []),
+            ...(monthData.avulsosItems || [])
+        ].filter(t => !t.paid && !isExcluded(t) && (t.dueDate || t.date));
+
+        const mapped = unpaid.map(t => {
+            const rawDate = (t.dueDate || t.date)!;
+            const parts = rawDate.split('-').map(Number);
+            const billDate = new Date(parts[0], parts[1] - 1, parts[2]);
+            billDate.setHours(0, 0, 0, 0);
+            const diffMs = billDate.getTime() - refDate.getTime();
+            const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+            return {
+                ...t,
+                parsedDate: billDate,
+                diffDays,
+                displayDay: parts[2],
+                displayMonth: parts[1]
+            };
+        });
+
+        // Contas nos próximos 7 dias (0 <= diffDays <= 7)
+        const inWindow = mapped.filter(b => b.diffDays >= 0 && b.diffDays <= 7);
+
+        inWindow.sort((a, b) => {
+            if (a.diffDays !== b.diffDays) return a.diffDays - b.diffDays;
+            return b.amount - a.amount;
+        });
+
+        return inWindow.slice(0, 3);
+    }, [monthData, currentYear, currentMonth]);
+
+    const totalUpcomingSevenDays = useMemo(() => {
+        return upcomingSevenDaysBills.reduce((acc, b) => acc + (b.amount || 0), 0);
+    }, [upcomingSevenDaysBills]);
+
     const sidebarAccounts = monthData?.bankAccounts || [];
 
     if (!monthData) return <div className="h-screen w-full flex items-center justify-center bg-slate-50 font-black text-slate-400 animate-pulse">Carregando Finanças...</div>;
@@ -2805,6 +2984,172 @@ const App: React.FC = () => {
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        {/* PRÓXIMAS 3 CONTAS A VENCER (PRÓXIMOS 7 DIAS) - PLANEJAMENTO IMEDIATO */}
+                                        <div className="bg-white/45 backdrop-blur-md rounded-3xl lg:rounded-[2.5rem] p-4 lg:p-8 border border-white/60 shadow-xl shadow-slate-200/40 mb-6 lg:mb-8">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2.5 lg:p-3 bg-amber-500/10 text-amber-600 rounded-2xl shadow-sm border border-amber-200/50">
+                                                        <Clock size={22} className="lg:w-7 lg:h-7 text-amber-500" strokeWidth={2.5} />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center gap-2">
+                                                            <h2 className="text-base lg:text-xl font-black text-slate-850 tracking-tight">Próximos Vencimentos (7 Dias)</h2>
+                                                            <span className="text-[10px] lg:text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-amber-500/15 text-amber-800 border border-amber-300/50">
+                                                                Planejamento Imediato
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-xs lg:text-sm font-bold text-slate-400">
+                                                            {upcomingSevenDaysBills.length > 0 
+                                                                ? `As ${upcomingSevenDaysBills.length} próximas obrigações mais urgentes para você planejar seu caixa` 
+                                                                : 'Nenhuma conta a vencer nesta semana'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {upcomingSevenDaysBills.length > 0 && (
+                                                    <div className="flex items-center gap-2 self-start sm:self-auto bg-white/85 border border-slate-200/80 px-3.5 py-2 rounded-2xl shadow-sm">
+                                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Imediato:</span>
+                                                        <span className="text-sm lg:text-base font-black text-slate-900 tracking-tight">
+                                                            {formatCurrency(totalUpcomingSevenDays)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {upcomingSevenDaysBills.length > 0 ? (
+                                                <>
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 lg:gap-4 mb-4">
+                                                        {upcomingSevenDaysBills.map((bill) => {
+                                                            const isDueToday = bill.diffDays === 0;
+                                                            const isDueTomorrow = bill.diffDays === 1;
+
+                                                            return (
+                                                                <div 
+                                                                    key={bill.id} 
+                                                                    onClick={() => handleEditTransaction(bill)}
+                                                                    className={`bg-white rounded-2xl lg:rounded-3xl p-4 lg:p-5 border shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden ${
+                                                                        isDueToday 
+                                                                            ? 'border-rose-300 ring-2 ring-rose-400/20' 
+                                                                            : isDueTomorrow 
+                                                                                ? 'border-amber-300' 
+                                                                                : 'border-slate-100'
+                                                                    }`}
+                                                                >
+                                                                    {/* Top row: Urgency badge and due date */}
+                                                                    <div className="flex items-center justify-between gap-2 mb-3">
+                                                                        <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl flex items-center gap-1.5 ${
+                                                                            isDueToday
+                                                                                ? 'bg-rose-500/15 text-rose-700 border border-rose-300/50'
+                                                                                : isDueTomorrow
+                                                                                    ? 'bg-amber-500/15 text-amber-800 border border-amber-300/50'
+                                                                                    : 'bg-sky-500/10 text-sky-800 border border-sky-200'
+                                                                        }`}>
+                                                                            <span className={`w-2 h-2 rounded-full ${
+                                                                                isDueToday ? 'bg-rose-500 animate-pulse' : isDueTomorrow ? 'bg-amber-500' : 'bg-sky-500'
+                                                                            }`}></span>
+                                                                            {isDueToday ? 'Vence Hoje' : isDueTomorrow ? 'Vence Amanhã' : `Em ${bill.diffDays} dias`}
+                                                                        </span>
+
+                                                                        <div className="flex items-center gap-1 text-xs font-black text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
+                                                                            <Calendar size={13} className="text-slate-400" />
+                                                                            <span>{String(bill.displayDay).padStart(2, '0')}/{String(bill.displayMonth).padStart(2, '0')}</span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Middle: Description, category, installments */}
+                                                                    <div className="mb-4">
+                                                                        <h3 className="text-base font-black text-slate-850 tracking-tight line-clamp-1 group-hover:text-slate-950 transition-colors">
+                                                                            {bill.description}
+                                                                        </h3>
+
+                                                                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                                                                            {bill.group && (
+                                                                                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/60">
+                                                                                    {bill.group}
+                                                                                </span>
+                                                                            )}
+                                                                            {bill.installments && (
+                                                                                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/50">
+                                                                                    {bill.installments.current}/{bill.installments.total}
+                                                                                </span>
+                                                                            )}
+                                                                            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-50 text-slate-500">
+                                                                                {bill.category}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Bottom: Amount and Quick Pay Button */}
+                                                                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Valor</span>
+                                                                            <span className="text-lg lg:text-xl font-black text-slate-900 tracking-tight">
+                                                                                {formatCurrency(bill.amount)}
+                                                                            </span>
+                                                                        </div>
+
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleTogglePaid(bill.id, true, 'expenses');
+                                                                            }}
+                                                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-xs font-black uppercase tracking-wider transition-all shadow-sm shadow-emerald-500/20"
+                                                                            title="Marcar como Pago"
+                                                                        >
+                                                                            <Check size={14} strokeWidth={3} />
+                                                                            <span>Pagar</span>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    {/* Reassuring Planning Footer Bar */}
+                                                    <div className="bg-white/80 rounded-2xl p-3.5 lg:p-4 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${santanderGiro >= totalUpcomingSevenDays ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+                                                            <p className="text-xs sm:text-sm font-bold text-slate-600">
+                                                                {santanderGiro >= totalUpcomingSevenDays ? (
+                                                                    <>
+                                                                        O giro do Santander (<strong className="text-emerald-600 font-black">{formatCurrency(santanderGiro)}</strong>) cobre com folga as contas dos próximos 7 dias, restando <strong className="text-slate-900 font-black">{formatCurrency(santanderGiro - totalUpcomingSevenDays)}</strong>.
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        Atenção: O giro do Santander (<strong className="text-amber-600 font-black">{formatCurrency(santanderGiro)}</strong>) não cobre todo o valor imediato. Faltam <strong className="text-rose-600 font-black">{formatCurrency(totalUpcomingSevenDays - santanderGiro)}</strong>.
+                                                                    </>
+                                                                )}
+                            </p>
+                                                        </div>
+
+                                                        <button
+                                                            onClick={() => {
+                                                                setView('transactions');
+                                                                setTransactionListType('expenses');
+                                                            }}
+                                                            className="text-xs font-black uppercase tracking-wider text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors self-end sm:self-auto shrink-0"
+                                                        >
+                                                            <span>Ver todas as contas</span>
+                                                            <ArrowRight size={14} />
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="bg-white/80 rounded-2xl p-6 border border-emerald-100 flex items-center gap-4 text-slate-700">
+                                                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/50 flex items-center justify-center text-emerald-600 shrink-0 shadow-sm">
+                                                        <CheckCircle2 size={24} strokeWidth={2.5} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-black text-slate-850 text-sm lg:text-base">Nenhuma conta a vencer nos próximos 7 dias!</h4>
+                                                        <p className="text-xs lg:text-sm text-slate-500 font-bold mt-0.5">
+                                                            Todas as obrigações para esta semana já foram quitadas ou têm vencimento posterior. Planejamento financeiro imediato tranquilo.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* QUITAÇÃO DE DÍVIDAS EM ABERTO */}

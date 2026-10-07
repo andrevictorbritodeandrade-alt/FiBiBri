@@ -497,6 +497,12 @@ const TransactionList: React.FC<TransactionListProps> = ({
                                                     <span className="text-xs sm:text-sm font-black">{item.dueDate.split('-')[2]}</span>
                                                 </div>
                                             )}
+                                            {item.purchaseDate && (
+                                                <div className="px-2.5 py-1 lg:px-3 lg:py-1.5 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 flex items-center gap-1 shadow-sm">
+                                                    <span className="text-[10px] sm:text-xs font-black tracking-widest uppercase opacity-70">Compra</span>
+                                                    <span className="text-xs sm:text-sm font-black">{item.purchaseDate.includes('-') ? `${item.purchaseDate.split('-')[2]}/${item.purchaseDate.split('-')[1]}` : item.purchaseDate}</span>
+                                                </div>
+                                            )}
                                             {item.installments && (
                                                 <div className="px-2.5 py-1 lg:px-3 lg:py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center gap-1 shadow-sm">
                                                     <span className="text-[10px] sm:text-xs font-black tracking-widest uppercase opacity-70">Parc.</span>
@@ -526,7 +532,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
                             <span className="text-xs font-black text-white truncate">
                                 {selectedTransactions.length} conta{selectedTransactions.length > 1 ? 's' : ''} no bilhete
                             </span>
-                            <span className="text-sm sm:text-base font-black text-orange-400 font-mono tracking-tight">
+                            <span className="text-sm sm:text-base font-black text-orange-400 tracking-tight">
                                 {formatCurrency(selectedTotalSum)}
                             </span>
                         </div>

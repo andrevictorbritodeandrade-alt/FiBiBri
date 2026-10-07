@@ -15,7 +15,11 @@ import {
     HelpCircle,
     Building2,
     Calendar,
-    ChevronRight
+    ChevronRight,
+    Wallet,
+    CheckCircle2,
+    Check,
+    Edit3
 } from 'lucide-react';
 import { MonthData } from '../types';
 
@@ -42,6 +46,27 @@ interface SavingsGoal {
 }
 
 export const SavingsPlanner: React.FC<SavingsPlannerProps> = ({ monthData, currencyFormatter, onUpdateReserves }) => {
+    // Calculate days/months elapsed relative to current date (2026-09-05)
+    const calculateTimeElapsed = (dateStr: string) => {
+        const depositDate = new Date(dateStr);
+        const currentDate = new Date('2026-09-05');
+        
+        if (depositDate > currentDate) return 'Recente';
+        
+        const diffTime = Math.abs(currentDate.getTime() - depositDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 30) {
+            return `há ${diffDays} ${diffDays === 1 ? 'dia' : 'dias'}`;
+        }
+        const months = Math.floor(diffDays / 30);
+        const remainingDays = diffDays % 30;
+        if (remainingDays === 0) {
+            return `há ${months} ${months === 1 ? 'mês' : 'meses'}`;
+        }
+        return `há ${months} ${months === 1 ? 'mês' : 'meses'} e ${remainingDays} ${remainingDays === 1 ? 'dia' : 'dias'}`;
+    };
+
     const totalIncome = monthData.incomes.reduce((acc, i) => acc + i.amount, 0);
     const totalExpenses = monthData.expenses.reduce((acc, e) => acc + e.amount, 0) + monthData.avulsosItems.reduce((acc, a) => acc + a.amount, 0);
     const monthlySurplus = totalIncome - totalExpenses;
@@ -50,21 +75,89 @@ export const SavingsPlanner: React.FC<SavingsPlannerProps> = ({ monthData, curre
     const currentSantanderBalance = monthData.bankReserves?.santander || 0;
     const currentInterBalance = monthData.bankReserves?.inter || 0;
 
+    // Total consolidated physical balance across all accounts (Santander + Sofisa + Inter + any extra accounts)
+    const extraAccountsBalance = (monthData.bankAccounts || [])
+        .filter(acc => !['santander', 'sofisa', 'inter', 'conta principal'].some(n => acc.name.toLowerCase().includes(n)))
+        .reduce((sum, acc) => sum + (acc.balance || 0), 0);
+    const totalAccountsBalance = currentSantanderBalance + currentInterBalance + currentSofisaBalance + extraAccountsBalance;
+
+    // Monthly Reserve Goal State & Persistence
+    const [monthlyReserveGoal, setMonthlyReserveGoal] = useState<number>(() => {
+        try {
+            const saved = localStorage.getItem('financas_monthly_reserve_goal');
+            if (saved) {
+                const parsed = parseFloat(saved);
+                if (!isNaN(parsed) && parsed > 0) return parsed;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        return monthData.monthlyReserveGoal || 1000;
+    });
+
+    const [goalInputValue, setGoalInputValue] = useState<string>(() => monthlyReserveGoal.toString());
+    const [isSavedFeedback, setIsSavedFeedback] = useState<boolean>(false);
+
+    const handleUpdateGoal = (newGoalVal: number) => {
+        if (isNaN(newGoalVal) || newGoalVal <= 0) return;
+        setMonthlyReserveGoal(newGoalVal);
+        setGoalInputValue(newGoalVal.toString());
+        try {
+            localStorage.setItem('financas_monthly_reserve_goal', newGoalVal.toString());
+        } catch (e) {
+            console.error(e);
+        }
+        setIsSavedFeedback(true);
+        setTimeout(() => setIsSavedFeedback(false), 2500);
+    };
+
+    const handleGoalFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const parsed = parseFloat(goalInputValue);
+        if (!isNaN(parsed) && parsed > 0) {
+            handleUpdateGoal(parsed);
+        }
+    };
+
+    const goalPercentage = monthlyReserveGoal > 0 
+        ? (totalAccountsBalance / monthlyReserveGoal) * 100 
+        : 0;
+    const clampedProgress = Math.min(100, Math.max(0, goalPercentage));
+    const goalDifference = totalAccountsBalance - monthlyReserveGoal;
+    const isGoalAchieved = totalAccountsBalance >= monthlyReserveGoal;
+
     // Persist and load Sofisa Movements
     const [movements, setMovements] = useState<SofisaMovement[]>(() => {
         try {
             const saved = localStorage.getItem('financas_sofisa_movements');
-            if (saved) return JSON.parse(saved);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                const hasOldMock = parsed.some((m: any) => m.id === 'm1' || m.id === 'm2' || m.id === 'm3');
+                if (!hasOldMock) {
+                    return parsed;
+                }
+            }
         } catch (e) {
             console.error(e);
         }
-        // Pre-populate with realistic entries matching the R$ 100,00 initial balance
         return [
-            { id: 'm1', date: '2026-03-15', type: 'deposit', amount: 50.00, description: 'Depósito Inicial (Poupança protegida)' },
-            { id: 'm2', date: '2026-05-20', type: 'deposit', amount: 30.00, description: 'Economia Alocada (Maio)' },
-            { id: 'm3', date: '2026-08-10', type: 'deposit', amount: 20.00, description: 'Reserva Adicional (Agosto)' }
+            { id: 'm_sep01', date: '2026-09-01', type: 'deposit', amount: 100.00, description: 'Depósito Poupança Protegida Sofisa' }
         ];
     });
+
+    // Helper to capitalize string
+    const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+    // Get dynamic start dates/time based on movements
+    const firstMovement = movements.length > 0 ? movements[movements.length - 1] : null;
+    
+    const sinceText = firstMovement 
+        ? `Desde ${capitalize(new Date(firstMovement.date + 'T00:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }))}`
+        : 'Sem depósitos';
+
+    const firstDepositDiffText = firstMovement
+        ? `Primeiro depósito ${calculateTimeElapsed(firstMovement.date)}`
+        : 'Sem histórico';
 
     const [goals, setGoals] = useState<SavingsGoal[]>(() => {
         try {
@@ -113,27 +206,6 @@ export const SavingsPlanner: React.FC<SavingsPlannerProps> = ({ monthData, curre
             console.error(e);
         }
     }, [goals]);
-
-    // Calculate days/months elapsed relative to current date (2026-09-05)
-    const calculateTimeElapsed = (dateStr: string) => {
-        const depositDate = new Date(dateStr);
-        const currentDate = new Date('2026-09-05');
-        
-        if (depositDate > currentDate) return 'Recente';
-        
-        const diffTime = Math.abs(currentDate.getTime() - depositDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays < 30) {
-            return `há ${diffDays} ${diffDays === 1 ? 'dia' : 'dias'}`;
-        }
-        const months = Math.floor(diffDays / 30);
-        const remainingDays = diffDays % 30;
-        if (remainingDays === 0) {
-            return `há ${months} ${months === 1 ? 'mês' : 'meses'}`;
-        }
-        return `há ${months} ${months === 1 ? 'mês' : 'meses'} e ${remainingDays} ${remainingDays === 1 ? 'dia' : 'dias'}`;
-    };
 
     // Handle Deposit/Withdrawal to Sofisa Savings
     const handleSofisaTransaction = (e: React.FormEvent) => {
@@ -239,6 +311,210 @@ export const SavingsPlanner: React.FC<SavingsPlannerProps> = ({ monthData, curre
 
     return (
         <div className="w-full flex flex-col gap-6 pb-16 animate-fadeIn">
+            {/* Meta Mensal de Reserva & Progresso Visual Baseado no Saldo Total das Contas */}
+            <div className="bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 rounded-3xl p-6 lg:p-8 text-white shadow-xl relative overflow-hidden border border-emerald-500/30">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 blur-[90px] rounded-full pointer-events-none"></div>
+                <div className="absolute bottom-0 left-12 w-64 h-64 bg-teal-500/10 blur-[80px] rounded-full pointer-events-none"></div>
+
+                <div className="relative z-10 space-y-6">
+                    {/* Header da Meta de Reserva */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-inner">
+                                <Target size={26} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs uppercase font-black tracking-widest text-emerald-400">Meta Mensal de Reserva</span>
+                                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                        Saldo Total das Contas
+                                    </span>
+                                </div>
+                                <h2 className="text-xl lg:text-2xl font-black tracking-tight text-white mt-0.5">
+                                    Colchão de Reserva & Metas
+                                </h2>
+                            </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="flex items-center gap-2 self-start md:self-auto">
+                            {isGoalAchieved ? (
+                                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-black text-xs shadow-sm">
+                                    <CheckCircle2 size={16} className="text-emerald-400" />
+                                    <span>Meta Alcançada! ({goalPercentage.toFixed(0)}%)</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-black text-xs shadow-sm">
+                                    <TrendingUp size={16} className="text-amber-400" />
+                                    <span>Faltam {currencyFormatter(Math.abs(goalDifference))} ({goalPercentage.toFixed(0)}%)</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Cards Grid: Saldo Total, Meta Definida, Progresso % */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Saldo Total das Contas */}
+                        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10 flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Saldo Total das Contas</span>
+                                    <Wallet size={16} className="text-emerald-400" />
+                                </div>
+                                <div className="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight mt-1">
+                                    {currencyFormatter(totalAccountsBalance)}
+                                </div>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-white/10 flex flex-wrap gap-2 text-[10px] text-slate-300 font-bold">
+                                <span>Santander: {currencyFormatter(currentSantanderBalance)}</span>
+                                <span>•</span>
+                                <span>Sofisa: {currencyFormatter(currentSofisaBalance)}</span>
+                                {currentInterBalance > 0 && (
+                                    <>
+                                        <span>•</span>
+                                        <span>Inter: {currencyFormatter(currentInterBalance)}</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Meta Mensal Definida */}
+                        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10 flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Meta Mensal Definida</span>
+                                    <Target size={16} className="text-teal-400" />
+                                </div>
+                                <div className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">
+                                    {currencyFormatter(monthlyReserveGoal)}
+                                </div>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-white/10 text-[10px] text-slate-300 font-semibold">
+                                {isGoalAchieved 
+                                    ? `Superada em +${currencyFormatter(goalDifference)}!` 
+                                    : `Faltam ${currencyFormatter(Math.abs(goalDifference))} para o objetivo`
+                                }
+                            </div>
+                        </div>
+
+                        {/* Percentual Alcançado */}
+                        <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10 flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Progresso da Reserva</span>
+                                    <Percent size={16} className="text-emerald-400" />
+                                </div>
+                                <div className="text-2xl sm:text-3xl font-black text-teal-300 tracking-tight mt-1 flex items-baseline gap-2">
+                                    <span>{goalPercentage.toFixed(1)}%</span>
+                                    <span className="text-xs text-slate-400 font-bold">concluído</span>
+                                </div>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-white/10 text-[10px] text-slate-300 font-semibold">
+                                {goalPercentage >= 100 ? '100% ou mais da meta alcançado' : `${clampedProgress.toFixed(0)}% do objetivo mensal atingido`}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Barra de Progresso Visual */}
+                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10 space-y-3">
+                        <div className="flex items-center justify-between text-xs font-black">
+                            <span className="text-slate-300 flex items-center gap-1.5">
+                                <Sparkles size={14} className="text-emerald-400" /> Barra de Progresso Visual
+                            </span>
+                            <span className="text-emerald-400 font-black">
+                                {currencyFormatter(totalAccountsBalance)} <span className="text-slate-400 font-medium">de</span> {currencyFormatter(monthlyReserveGoal)}
+                            </span>
+                        </div>
+
+                        {/* Progress Track */}
+                        <div className="w-full bg-slate-950/70 h-4 rounded-full p-0.5 border border-slate-700/60 overflow-hidden relative shadow-inner">
+                            <div 
+                                className={`h-full rounded-full transition-all duration-700 ease-out shadow-lg ${
+                                    isGoalAchieved 
+                                        ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-300 shadow-emerald-500/50' 
+                                        : 'bg-gradient-to-r from-indigo-500 via-teal-500 to-emerald-400 shadow-teal-500/30'
+                                }`}
+                                style={{ width: `${clampedProgress}%` }}
+                            ></div>
+                        </div>
+
+                        {/* Progress Markers and Legend */}
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                            <span>0% (R$ 0)</span>
+                            <span className="text-center font-black text-slate-300">
+                                {goalPercentage >= 100 ? '🎉 100% Alcançado!' : `${(100 - clampedProgress).toFixed(0)}% restante`}
+                            </span>
+                            <span className="text-emerald-300 font-black">100% ({currencyFormatter(monthlyReserveGoal)})</span>
+                        </div>
+                    </div>
+
+                    {/* Formulário / Campo para Definir a Meta Mensal de Reserva */}
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                        <form onSubmit={handleGoalFormSubmit} className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                            <div className="flex-1">
+                                <label className="text-xs font-black uppercase tracking-wider text-emerald-300 flex items-center gap-2 mb-1.5">
+                                    <Target size={14} /> Definir Meta de Valor Mensal de Reserva (R$)
+                                </label>
+                                <p className="text-xs text-slate-300 font-medium">
+                                    Informe o valor que deseja manter como meta mensal de reserva com base no saldo consolidado das suas contas.
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                                <div className="relative">
+                                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">R$</span>
+                                    <input 
+                                        type="number"
+                                        min="1"
+                                        step="50"
+                                        value={goalInputValue}
+                                        onChange={e => setGoalInputValue(e.target.value)}
+                                        placeholder="1000"
+                                        className="w-full sm:w-44 pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-black text-sm focus:outline-none focus:border-emerald-400 transition-colors shadow-inner"
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className="py-2.5 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20"
+                                >
+                                    {isSavedFeedback ? (
+                                        <>
+                                            <Check size={16} strokeWidth={3} className="text-slate-950" />
+                                            <span>Salvo!</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle2 size={16} strokeWidth={2.5} />
+                                            <span>Salvar Meta</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+
+                        {/* Atalhos Rápidos de Meta */}
+                        <div className="mt-3 pt-3 border-t border-white/10 flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Atalhos rápidos:</span>
+                            {[300, 500, 1000, 2000, 3000, 5000].map(val => (
+                                <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => handleUpdateGoal(val)}
+                                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all border ${
+                                        monthlyReserveGoal === val
+                                            ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
+                                            : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                                    }`}
+                                >
+                                    {currencyFormatter(val)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Real Bank Account Visual - Sofisa Direto */}
             <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-900 rounded-3xl p-6 lg:p-8 text-white shadow-xl relative overflow-hidden border border-indigo-500/25">
                 <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 blur-[90px] rounded-full"></div>
@@ -284,9 +560,9 @@ export const SavingsPlanner: React.FC<SavingsPlannerProps> = ({ monthData, curre
                         <div className="bg-white/5 rounded-2xl p-4 border border-white/5 flex flex-col justify-between">
                             <div>
                                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Tempo Acumulado</span>
-                                <p className="text-base font-black text-orange-400 mt-1">Desde Março/2026</p>
+                                <p className="text-base font-black text-orange-400 mt-1">{sinceText}</p>
                             </div>
-                            <span className="text-xs text-slate-400 font-bold mt-2">Primeiro depósito há 174 dias</span>
+                            <span className="text-xs text-slate-400 font-bold mt-2">{firstDepositDiffText}</span>
                         </div>
                     </div>
                 </div>

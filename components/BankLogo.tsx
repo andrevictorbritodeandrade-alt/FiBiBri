@@ -87,7 +87,7 @@ export const BankLogo: React.FC<BankLogoProps> = ({
     size = 'md',
     layout = 'stacked',
     theme = 'emerald',
-    imageSrc = '/logo.jpg'
+    imageSrc = '/logo.png'
 }) => {
     // Dimensions map
     const iconSizeMap = {
@@ -119,7 +119,7 @@ export const BankLogo: React.FC<BankLogoProps> = ({
                     <img 
                         src={imageSrc} 
                         alt="Logo Símbolo Finanças Bispo de Andrade" 
-                        className="rounded-2xl object-contain"
+                        className="object-contain bg-transparent"
                         style={{ width: iconDimension, height: iconDimension }}
                         referrerPolicy="no-referrer"
                     />
@@ -137,7 +137,7 @@ export const BankLogo: React.FC<BankLogoProps> = ({
                     <img 
                         src={imageSrc} 
                         alt="Logo Finanças Bispo de Andrade" 
-                        className="object-contain h-10 w-auto rounded-lg transition-transform duration-300 hover:scale-105"
+                        className="object-contain h-10 w-auto bg-transparent transition-transform duration-300 hover:scale-105"
                         referrerPolicy="no-referrer"
                     />
                 ) : (
@@ -164,7 +164,7 @@ export const BankLogo: React.FC<BankLogoProps> = ({
                 <img 
                     src={imageSrc} 
                     alt="Logo Oficial Finanças Bispo de Andrade" 
-                    className="h-28 sm:h-32 w-auto object-contain transition-transform duration-300 group-hover:scale-105 rounded-xl"
+                    className="h-28 sm:h-32 w-auto object-contain bg-transparent transition-transform duration-300 group-hover:scale-105"
                     referrerPolicy="no-referrer"
                 />
             ) : (

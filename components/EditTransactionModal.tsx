@@ -366,16 +366,33 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ isOpen, onC
                         </div>
                     </div>
 
-                    {/* Date */}
+                    {/* Due Date */}
                     <div className="space-y-2">
                         <label className="text-base font-black text-slate-500 uppercase tracking-wide flex items-center gap-1.5 ml-1">
-                            <Calendar size={18} strokeWidth={3} /> Data / Vencimento
+                            <Calendar size={18} strokeWidth={3} /> Data de Vencimento
                         </label>
                         <input 
                             type="date" 
                             value={currentDateValue}
                             onChange={(e) => handleChange(dateField, e.target.value)}
                             className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-slate-900 font-black text-lg focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all shadow-sm"
+                        />
+                    </div>
+
+                    {/* Purchase Date (Data da Compra) */}
+                    <div className="space-y-2">
+                        <label className="text-base font-black text-slate-500 uppercase tracking-wide flex items-center justify-between ml-1">
+                            <span className="flex items-center gap-1.5">
+                                <Calendar size={18} strokeWidth={3} className="text-indigo-500" /> Data da Compra
+                            </span>
+                            <span className="text-xs font-bold text-slate-400 lowercase">(opcional)</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            value={formData.purchaseDate || ''}
+                            onChange={(e) => handleChange('purchaseDate', e.target.value || undefined)}
+                            placeholder="Data em que a compra foi feita"
+                            className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-slate-900 font-black text-lg focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all shadow-sm"
                         />
                     </div>
 
