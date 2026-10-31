@@ -72,14 +72,24 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
 
 const App: React.FC = () => {
     // App State
-    // Default to September 2026 if it's currently August 2026, otherwise use current month
+    // Automatic cycle shifting: when Marcelly receives her salary (from the 27th of the month onwards),
+    // the application immediately opens on the upcoming month (e.g. from Oct 27 onwards, it opens on November)
     const [currentMonth, setCurrentMonth] = useState(() => {
         const now = new Date();
-        return (now.getFullYear() === 2026 && now.getMonth() === 7) ? 9 : now.getMonth() + 1;
+        if (now.getDate() >= 27) {
+            return now.getMonth() === 11 ? 1 : now.getMonth() + 2;
+        }
+        return now.getMonth() + 1;
     });
-    const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+    const [currentYear, setCurrentYear] = useState(() => {
+        const now = new Date();
+        if (now.getDate() >= 27 && now.getMonth() === 11) {
+            return now.getFullYear() + 1;
+        }
+        return now.getFullYear();
+    });
     const [monthData, setMonthData] = useState<MonthData | null>(null);
-    const [view, setView] = useState<'home' | 'transactions' | 'statistics' | 'settlements' | 'flightPlan' | 'savings'>('home');
+    const [view, setView] = useState<'home' | 'transactions' | 'statistics' | 'settlements' | 'flightPlan' | 'savings'>('transactions');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [syncStatus, setSyncStatus] = useState<'offline' | 'syncing' | 'online'>('offline');
     const [transactionListType, setTransactionListType] = useState<TransactionType>('expenses');
@@ -1192,8 +1202,8 @@ const App: React.FC = () => {
                 addOrUpdateIagoExpense("EMPRÉSTIMO PARA VIAJAR", 416.66, "emprestimo_viajar", { current: 2, total: 6 }, "Iago", "EMPRÉSTIMO PARA VIAJAR");
             }
 
-            // October 2026 to February 2027: User screenshot items
-            if ((year === 2026 && month >= 10) || (year === 2027 && month <= 2)) {
+            // October 2026 to February 2027: User screenshot items (Exclude November 2026 as it has a dedicated block)
+            if (((year === 2026 && month >= 10) || (year === 2027 && month <= 2)) && !(year === 2026 && month === 11)) {
                 const targetInst8 = (year - 2026) * 12 + month - 8 + 1; // 10 -> 3, 11 -> 4, 12 -> 5, 1 -> 6
 
                 if (targetInst8 >= 1 && targetInst8 <= 6) {
@@ -1208,16 +1218,7 @@ const App: React.FC = () => {
                     addOrUpdateIagoExpense("EMPRÉSTIMO PARA VIAJAR", 416.66, "emprestimo_viajar", { current: targetInst8, total: 6 }, "Iago", "EMPRÉSTIMO PARA VIAJAR");
                 }
                 addOrUpdateIagoExpense("CLAROFLEX ANDRÉ", 59.90, "claroflex_andre", null, "Moradia", "CLAROFLEX ANDR");
-                addOrUpdateIagoExpense("CLAROFLEX MARCELLY", 44.90, "claroflex_marcelly", null, "Moradia", "CLAROFLEX MARCELLY");
-
-                if (year === 2026 && month === 10) {
-                    addOrUpdateIagoExpense("CONSERTO DO CELULAR", 110.00, "conserto_celular", { current: 1, total: 2 }, "Iago", "CONSERTO DO CELULAR");
-                    addOrUpdateIagoExpense("ABASTECIMENTO (19/09)", 307.46, "abastecimento_1909", null, "Iago", "ABASTECIMENTO (19/09)", "2026-09-19");
-                    addOrUpdateIagoExpense("ABASTECIMENTO (29/09)", 342.24, "abastecimento_2909", null, "Iago", "ABASTECIMENTO (29/09)", "2026-09-29");
-                    addOrUpdateIagoExpense("CANETA EMAGRECEDORA (DROGARAIA)", 490.00, "caneta_emagrecedora", null, "Iago", "CANETA EMAGRECEDORA", "2026-09-29");
-                } else if (year === 2026 && month === 11) {
-                    addOrUpdateIagoExpense("CONSERTO DO CELULAR", 110.00, "conserto_celular", { current: 2, total: 2 }, "Iago", "CONSERTO DO CELULAR");
-                }
+                addOrUpdateIagoExpense("CLAROFLEX MARCELLY", 44.90, "claroflex_marcellly", null, "Moradia", "CLAROFLEX MARCELLY");
             }
             
             // Cleanup old variables and requested removals
@@ -1652,31 +1653,6 @@ const App: React.FC = () => {
                 }
             });
 
-            // Claroflex items on Iago Nubank card
-            const claroflexAndre = cleanExpenses.find(e => e.description.toUpperCase().includes('CLAROFLEX ANDRÉ') || e.description.toUpperCase().includes('CLAROFLEX ANDRE'));
-            if (!claroflexAndre) {
-                cleanExpenses.push({
-                    id: 'exp_claroflex_andre_iago_2026_10',
-                    description: 'CLAROFLEX ANDRÉ',
-                    amount: 59.90,
-                    category: 'Moradia',
-                    paid: false,
-                    dueDate: '2026-10-07',
-                    group: 'IAGO (CARTÃO NUBANK)'
-                });
-            }
-            const claroflexMarcelly = cleanExpenses.find(e => e.description.toUpperCase().includes('CLAROFLEX MARCELLY'));
-            if (!claroflexMarcelly) {
-                cleanExpenses.push({
-                    id: 'exp_claroflex_marcelly_iago_2026_10',
-                    description: 'CLAROFLEX MARCELLY',
-                    amount: 44.90,
-                    category: 'Moradia',
-                    paid: false,
-                    dueDate: '2026-10-07',
-                    group: 'IAGO (CARTÃO NUBANK)'
-                });
-            }
 
             // Empréstimo Junho parcela 4/4
             const loanJunho = cleanExpenses.find(e => e.description.toUpperCase().includes('EMPRÉSTIMO PARA PAGAR AS CONTAS DE JUNHO') || e.description.toUpperCase().includes('EMPRESTIMO PARA PAGAR AS CONTAS DE JUNHO'));
@@ -1798,63 +1774,20 @@ const App: React.FC = () => {
                 });
             }
 
-            // Iago's detailed expenses from October credit card statement
-            const iagoItems = [
-                { desc: "Claro Flex", amount: 44.90, date: "2026-10-06" },
-                { desc: "Mp *Myfood", amount: 416.66, inst: { current: 4, total: 6 }, date: "2026-09-30" },
-                { desc: "Airbnb * Hmepqps338", amount: 63.33, inst: { current: 4, total: 6 }, date: "2026-09-30" },
-                { desc: "Rentcars*Movida", amount: 63.17, inst: { current: 4, total: 6 }, date: "2026-09-30" },
-                { desc: "Airbnb * Hmt3q9tbyb", amount: 190.74, inst: { current: 4, total: 6 }, date: "2026-09-30" },
-                { desc: "Matheusbritoda", amount: 110.00, inst: { current: 2, total: 2 }, date: "2026-09-30" },
-                { desc: "Airbnb * Hmjhtc29yf", amount: 30.95, inst: { current: 4, total: 6 }, date: "2026-09-30" },
-                { desc: "Airbnb * Hm2ydd2j9t", amount: 95.01, inst: { current: 4, total: 6 }, date: "2026-09-30" },
-                { desc: "Rentcars", amount: 78.57, inst: { current: 4, total: 6 }, date: "2026-09-30" },
-                { desc: "Airbnb * Hm5kaqjy4j", amount: 27.16, inst: { current: 4, total: 6 }, date: "2026-09-30" },
-                { desc: "Gol Linhas A*Hqwsnk011", amount: 216.94, inst: { current: 4, total: 6 }, date: "2026-09-30" },
-                { desc: "Abastece ai", amount: 355.08, date: "2026-10-15" },
-                { desc: "Drogaria Pacheco", amount: 65.04, date: "2026-10-18" },
-                { desc: "Drogaria Pacheco", amount: 256.79, date: "2026-10-18" },
-                { desc: "Drogaria Pacheco", amount: 23.50, date: "2026-10-19" },
-                { desc: "Abastece ai", amount: 305.77, date: "2026-10-22" },
-                { desc: "Claro Flex", amount: 44.99, date: "2026-10-24" },
-                { desc: "Claro Flex", amount: 44.99, date: "2026-10-24" }
-            ];
-
-            // Filter out existing Iago/Nubank items to avoid duplicates
-            const filteredExpenses = cleanExpenses.filter(e => {
-                const norm = e.description.toUpperCase();
-                const isIago = e.group === 'IAGO (CARTÃO NUBANK)' || e.category === 'Iago' || norm.includes('IAGO');
-                return !isIago;
-            });
-
-            // Add the fresh items from the statement
-            iagoItems.forEach((item, idx) => {
-                filteredExpenses.push({
-                    id: `exp_iago_oct26_${idx}`,
-                    description: item.desc,
-                    amount: item.amount,
-                    category: "Iago",
-                    paid: true,
-                    paidAt: "2026-10-27", // Marked as paid today
-                    dueDate: item.date,
-                    purchaseDate: item.date,
-                    installments: item.inst || undefined,
-                    group: 'IAGO (CARTÃO NUBANK)'
-                });
-            });
-
-            // Ensure Aluguel and Internet are marked as paid
-            filteredExpenses.forEach(e => {
+            // Ensure Aluguel and Internet are marked as paid in October
+            cleanExpenses.forEach(e => {
                 const norm = e.description.toUpperCase().trim();
                 if (norm === 'ALUGUEL' || norm.includes('INTERNET')) {
                     e.paid = true;
                     if (!e.paidAt) e.paidAt = '2026-10-01';
                 }
+                if (e.group === 'IAGO (CARTÃO NUBANK)' || e.category === 'Iago' || norm.includes('IAGO')) {
+                    e.paid = true;
+                    if (!e.paidAt) e.paidAt = '2026-10-07';
+                }
             });
 
-            data.expenses = filteredExpenses.filter(e => !e.description.toUpperCase().trim().includes('SEGURO DO CARRO'));
-
-            // Incomes for October 2026
+            // Incomes for October 2026 - Ensure André 65, Marcelly 65, Vanda 150 are present
             const cleanIncomes: Transaction[] = canonicalOct.incomes.map(inc => {
                 const norm = inc.description.toUpperCase().trim();
                 const userState = userPaidMap.get(norm);
@@ -1863,6 +1796,9 @@ const App: React.FC = () => {
                 }
                 return inc;
             });
+
+            // Remove Seguro do Carro and return final expenses for October
+            data.expenses = cleanExpenses.filter(e => !e.description.toUpperCase().trim().includes('SEGURO DO CARRO'));
 
             (data.incomes || []).forEach(inc => {
                 const norm = inc.description.toUpperCase().trim();
@@ -1882,6 +1818,130 @@ const App: React.FC = () => {
                 };
             }
 
+        }
+
+        // Consolidated updates for November 2026
+        if (year === 2026 && month === 11) {
+            const canonicalNov = generateMonthData(2026, 11);
+            
+            // 1. Set Bank Balance
+            if (!data.bankReserves) {
+                data.bankReserves = { santander: 2891.73, inter: 0, sofisa: 0 };
+            } else {
+                data.bankReserves.santander = 2891.73;
+            }
+
+            // 2. Build map of existing user paid & skipped statuses by ID and description to preserve them
+            const userPaidMap = new Map<string, { paid: boolean, paidAt?: string | null, userModifiedPaid?: boolean, skipped?: boolean }>();
+            const existingItemsById = new Map<string, { paid: boolean, paidAt?: string | null, userModifiedPaid?: boolean, skipped?: boolean }>();
+            [...data.expenses, ...data.avulsosItems, ...(data.incomes || [])].forEach(item => {
+                const normDesc = item.description.toUpperCase().trim();
+                const state = { paid: item.paid, paidAt: item.paidAt, userModifiedPaid: item.userModifiedPaid, skipped: item.skipped };
+                userPaidMap.set(normDesc, state);
+                if (item.id) {
+                    existingItemsById.set(item.id, state);
+                }
+            });
+
+            // 3. Filter out ALL Iago-related items from the current list to avoid bloating/duplicates
+            data.expenses = data.expenses.filter(e => {
+                const norm = e.description.toUpperCase();
+                const normGroup = (e.group || '').toUpperCase();
+                const isIago = normGroup.includes('IAGO') || 
+                               e.category === 'Iago' || 
+                               norm.includes('IAGO') || 
+                               norm.includes('NUBANK') ||
+                               norm.includes('ABASTECE AI') ||
+                               norm.includes('DROGARIA PACHECO') ||
+                               norm.includes('CLARO FLEX') ||
+                               norm.includes('AIRBNB') ||
+                               norm.includes('RENTCARS') ||
+                               norm.includes('GOL LINHAS') ||
+                               norm.includes('MYFOOD') ||
+                               norm.includes('MATHEUSBRITO');
+                return !isIago;
+            });
+
+            // 4. Clean canonical list (removing Iago items which we'll add manually)
+            const cleanExpenses: Transaction[] = canonicalNov.expenses
+                .filter(e => {
+                    const norm = e.description.toUpperCase();
+                    const normGroup = (e.group || '').toUpperCase();
+                    return !(normGroup.includes('IAGO') || e.category === 'Iago' || norm.includes('IAGO'));
+                })
+                .map(exp => {
+                    const norm = exp.description.toUpperCase().trim();
+                    const userState = userPaidMap.get(norm);
+                    if (userState) {
+                        return { ...exp, paid: userState.paid, paidAt: userState.paidAt, userModifiedPaid: userState.userModifiedPaid, skipped: userState.skipped };
+                    }
+                    return exp;
+                });
+
+            // 5. Add custom items from statement summing to R$ 2078,51
+            const iagoItems = [
+                { desc: "Claro Flex", amount: 44.90, date: "2026-10-06" },
+                { desc: "Mp *Myfood", amount: 416.66, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Airbnb * Hmepqps338", amount: 63.33, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Rentcars*Movida", amount: 63.17, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Airbnb * Hmt3q9tbyb", amount: 190.74, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Matheusbritoda", amount: 110.00, inst: { current: 2, total: 2 }, date: "2026-09-30" },
+                { desc: "Airbnb * Hmjhtc29yf", amount: 30.95, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Airbnb * Hm2ydd2j9t", amount: 95.01, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Rentcars", amount: 78.57, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Airbnb * Hm5kaqjy4j", amount: 27.16, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Gol Linhas A*Hqwsnk011", amount: 216.94, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Drogaria Pacheco", amount: 65.04, date: "2026-10-18" },
+                { desc: "Drogaria Pacheco", amount: 256.79, date: "2026-10-18" },
+                { desc: "Drogaria Pacheco", amount: 23.50, date: "2026-10-19" },
+                { desc: "Abastece ai", amount: 305.77, date: "2026-10-22" },
+                { desc: "Claro Flex", amount: 44.99, date: "2026-10-24" },
+                { desc: "Claro Flex", amount: 44.99, date: "2026-10-24" }
+            ];
+
+            iagoItems.forEach((item, idx) => {
+                const itemId = `exp_iago_nov26_${idx}`;
+                const existing = existingItemsById.get(itemId) || preservedStateById.get(itemId);
+                const isPaid = existing?.userModifiedPaid ? existing.paid : false;
+                const isSkipped = existing?.skipped ?? false;
+
+                cleanExpenses.push({
+                    id: itemId,
+                    description: item.desc,
+                    amount: item.amount,
+                    category: "Iago",
+                    paid: isPaid,
+                    paidAt: isPaid ? (existing?.paidAt || "2026-10-31") : null,
+                    userModifiedPaid: existing?.userModifiedPaid,
+                    skipped: isSkipped,
+                    dueDate: "2026-11-07",
+                    purchaseDate: item.date,
+                    installments: (item as any).inst || undefined,
+                    group: 'IAGO (CARTÃO NUBANK)'
+                });
+            });
+
+            // 6. Update Incomes (Salaries Paid)
+            const cleanIncomes: Transaction[] = canonicalNov.incomes.map(inc => {
+                const norm = inc.description.toUpperCase().trim();
+                const isSalary = norm.includes('SALÁRIO') || norm.includes('SALARIO');
+                if (isSalary) {
+                    return {
+                        ...inc,
+                        paid: true,
+                        paidAt: norm.includes('MARCELLY') ? '2026-10-27' : '2026-10-31',
+                        userModifiedPaid: true
+                    };
+                }
+                const userState = userPaidMap.get(norm);
+                if (userState) {
+                    return { ...inc, paid: userState.paid, paidAt: userState.paidAt, userModifiedPaid: userState.userModifiedPaid };
+                }
+                return inc;
+            });
+
+            data.incomes = cleanIncomes;
+            data.expenses = cleanExpenses;
             data.expenses.sort((a, b) => a.description.localeCompare(b.description, 'pt-BR', { sensitivity: 'base' }));
         }
 
@@ -2043,25 +2103,17 @@ const App: React.FC = () => {
                 });
             }
 
-            const consertoCelularNov = data.expenses.find(e => e.description.toUpperCase().includes('CONSERTO DO CELULAR') || e.description.toUpperCase().includes('CONSERTO CELULAR'));
-            if (consertoCelularNov) {
-                consertoCelularNov.amount = 110.00;
-                consertoCelularNov.category = 'Iago';
-                consertoCelularNov.group = 'IAGO (CARTÃO NUBANK)';
-                consertoCelularNov.installments = { current: 2, total: 2 };
-                consertoCelularNov.dueDate = '2026-11-07';
-            } else {
-                data.expenses.push({
-                    id: 'exp_conserto_celular_iago_2026_11',
-                    description: 'CONSERTO DO CELULAR',
-                    amount: 110.00,
-                    category: 'Iago',
-                    paid: false,
-                    dueDate: '2026-11-07',
-                    installments: { current: 2, total: 2 },
-                    group: 'IAGO (CARTÃO NUBANK)'
-                });
-            }
+            // Final safety filter for Iago group in November 2026 to ensure exact total R$ 2078,51
+            // Re-identify Iago IDs from the items we added in the November block
+            const expectedIagoIds = new Set(Array.from({ length: 17 }).map((_, idx) => `exp_iago_nov26_${idx}`));
+            data.expenses = data.expenses.filter(e => {
+                const normGroup = (e.group || '').toUpperCase();
+                const isIagoGroup = normGroup.includes('IAGO') || e.category === 'Iago';
+                if (isIagoGroup) {
+                    return expectedIagoIds.has(e.id);
+                }
+                return true;
+            });
         }
 
         if (year === 2026 && month === 12) {
@@ -2237,6 +2289,8 @@ const App: React.FC = () => {
                 });
             }
         }
+
+
 
         // Global deduplication to remove duplicate Iago items caused by trailing "(IAGO)"
         data.expenses = data.expenses.map(e => {
@@ -2675,8 +2729,10 @@ const App: React.FC = () => {
             if (groupNormal && !excludedGroups.includes(groupNormal) && !e.isDistribution) {
                 const name = groupNormal;
                 if (!groups[name]) groups[name] = { name, total: 0, paidAmount: 0, items: [] };
-                groups[name].total += e.amount;
-                if (e.paid) groups[name].paidAmount += e.amount;
+                if (!e.skipped && !e.isSuspended) {
+                    groups[name].total += e.amount;
+                    if (e.paid) groups[name].paidAmount += e.amount;
+                }
                 groups[name].items.push(e);
             }
         });
@@ -3596,6 +3652,7 @@ const App: React.FC = () => {
                                     onUpdate={(updated) => handleSaveTransaction(updated, transactionListType)}
                                     currentMonth={currentMonth}
                                     currentYear={currentYear}
+                                    bankBalance={bankReserves.santander}
                                 />
                             </motion.div>
                         )}

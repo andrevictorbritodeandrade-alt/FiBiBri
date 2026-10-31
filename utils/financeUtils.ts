@@ -74,12 +74,17 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         marcellySalaryDesc = `SALÁRIO MARCELLY (Recebido: 28/08)`;
         andreSalaryDate = `2026-09-01`;
         andreSalaryDesc = `SALÁRIO ANDRÉ (Recebido: 01/09)`;
+    } else if (year === 2026 && month === 11) {
+        marcellySalaryDate = `2026-10-27`;
+        marcellySalaryDesc = `SALÁRIO MARCELLY (Recebido: 27/10)`;
+        andreSalaryDate = `2026-10-31`;
+        andreSalaryDesc = `SALÁRIO ANDRÉ (Recebido: 31/10)`;
     }
 
     // Base Incomes
     const newIncomes: Transaction[] = [
-        { id: `inc_m_${year}_${month}`, description: marcellySalaryDesc, amount: 3436.22, paid: (year === 2026 && month === 9) ? true : (isJan2026 || isApr2026OrMay2026), date: marcellySalaryDate, dueDate: marcellySalaryDate, category: 'Salário' },
-        { id: `inc_a_${year}_${month}`, description: andreSalaryDesc, amount: (year === 2026 && month === 9) ? 3219.07 : (((year === 2026 && month >= 9) || year > 2026) ? 3219.07 : ((year === 2026 && month >= 7) ? 3334.00 : 3436.22)), paid: (year === 2026 && month === 9) ? true : (isJan2026 || isApr2026OrMay2026), date: andreSalaryDate, dueDate: andreSalaryDate, category: 'Salário' },
+        { id: `inc_m_${year}_${month}`, description: marcellySalaryDesc, amount: 3436.22, paid: (year === 2026 && (month === 9 || month === 11)) ? true : (isJan2026 || isApr2026OrMay2026), date: marcellySalaryDate, dueDate: marcellySalaryDate, category: 'Salário' },
+        { id: `inc_a_${year}_${month}`, description: andreSalaryDesc, amount: (year === 2026 && month === 9) ? 3219.07 : (((year === 2026 && month >= 9) || year > 2026) ? 3219.07 : ((year === 2026 && month >= 7) ? 3334.00 : 3436.22)), paid: (year === 2026 && (month === 9 || month === 11)) ? true : (isJan2026 || isApr2026OrMay2026), date: andreSalaryDate, dueDate: andreSalaryDate, category: 'Salário' },
         { id: `inc_mum_m_${year}_${month}`, description: 'MUMBUCA MARCELLY', amount: 598.00, paid: isJan2026, date: mumbucaDate, category: 'Mumbuca' }
     ];
 
@@ -154,11 +159,9 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { description: "ALUGUEL", amount: 1300.00, category: "Moradia", day: 1, group: 'MORADIA' },
         { description: "PSICÓLOGA DA MARCELLY", amount: 280.00, category: "Saúde", day: 10, group: 'MORADIA' }, 
         { description: "APPAI DA MARCELLY", amount: 110.00, category: "Saúde", day: 23, group: 'MARCIA BISPO' },
-        { description: "APPAI DO ANDRÉ", amount: 129.50, category: "Saúde", day: 12, group: 'MARCIA BRITO' },
         { description: "CARTÃO DO ITAÚ DA MARCELLY", amount: 198.34, category: "Moradia", day: 24, group: 'MORADIA' },
         { description: "CARTÃO DO ITAÚ DO ANDRÉ", amount: 116.00, category: "Moradia", day: 24, group: 'MORADIA' },
         { description: "INTERNET DA CASA", amount: 125.00, category: "Moradia", day: 18, group: 'MORADIA' },
-        { description: "INTERMÉDICA DO ANDRÉ", amount: 123.00, category: "Saúde", day: 12, group: 'MARCIA BRITO' },
         { description: "CONTA DA CLARO ANDRÉ", amount: 0, category: "Moradia", day: 5, group: 'MORADIA' },
         { description: "SEGURO DO CARRO", amount: 143.00, category: "Moradia", day: 20, group: 'MORADIA' },
         { description: "CONTA DA VIVO MARCELLY", amount: 66.60, category: "Moradia", day: 23, group: 'MORADIA' },
@@ -287,15 +290,17 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { desc: "ABASTECIMENTO (19/09)", totalAmount: 307.46, cat: "Iago", day: 7, installments: 1, sY: 2026, sM: 10, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-19' },
         { desc: "ABASTECIMENTO (29/09)", totalAmount: 342.24, cat: "Iago", day: 7, installments: 1, sY: 2026, sM: 10, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-29' },
         { desc: "CANETA EMAGRECEDORA (DROGARAIA)", totalAmount: 490.00, cat: "Iago", day: 7, installments: 1, sY: 2026, sM: 10, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-29' },
+        { desc: "APPAI DO ANDRÉ", totalAmount: 1594.00, cat: "Saúde", day: 12, installments: 12, sY: 2026, sM: 1, group: 'MARCIA BRITO', customAmounts: [129.50, 129.50, 129.50, 129.50, 129.50, 129.50, 129.50, 129.50, 129.50, 129.50, 149.50, 149.50] },
+        { desc: "INTERMÉDICA DO ANDRÉ", totalAmount: 1476.00, cat: "Saúde", day: 12, installments: 12, sY: 2026, sM: 1, group: 'MARCIA BRITO' },
         { desc: "ABASTECIMENTO 1", totalAmount: 275.00, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ABASTECIMENTO 2", totalAmount: 150.00, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ACRÉSCIMO PASSAGEM AÉREA", totalAmount: 240.00, cat: "Lazer", day: 7, installments: 2, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ADESÃO DA SEGURADORA", totalAmount: 100.00, cat: "Moradia", day: 5, installments: 1, sY: 2026, sM: 9, group: 'MORADIA' },
-        { desc: "AIRBNB (HMT3Q9TBYB)", totalAmount: 1144.44, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB (hm2ydd2j9t)", totalAmount: 570.06, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB (hmepqps338)", totalAmount: 379.98, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB (hm5kaqjy4j)", totalAmount: 162.96, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB (hmjhtc29yf)", totalAmount: 185.70, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (HMT3Q9TBYB)", totalAmount: 1144.44, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hm2ydd2j9t)", totalAmount: 570.06, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hmepqps338)", totalAmount: 379.98, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hm5kaqjy4j)", totalAmount: 162.96, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hmjhtc29yf)", totalAmount: 185.70, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ALINHAMENTO DO CARRO", totalAmount: 330.00, cat: "Transporte", day: 12, installments: 2, sY: 2026, sM: 9, group: 'MARCIA BRITO' },
         { desc: "CABESOM", totalAmount: 179.00, cat: "Outros", day: 28, installments: 2, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
         { desc: "CELULAR DA MARCELLY", totalAmount: 4628.88, cat: "Outros", day: 10, installments: 12, sY: 2026, sM: 3, group: 'MARCIA BISPO' },
@@ -337,18 +342,19 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { desc: "PASSAGENS AÉREAS JOBURG X CAPE TOWN", totalAmount: 1560.00, cat: "Viagens", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
         { desc: "PASSAGENS AÉREAS SP X JOBURG", totalAmount: 4038.96, cat: "Viagens", day: 4, installments: 8, sY: 2026, sM: 1, group: 'LILI TORRES' },
         { desc: "PASSAGENS DE ONIBUS RIO x SP", totalAmount: 438.00, cat: "Viagens", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
-        { desc: "Matheusbritoda", totalAmount: 220.00, cat: "Iago", day: 7, installments: 2, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-30' },
-        { desc: "PASSAGENS PARA SALVADOR", totalAmount: 1301.64, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "Matheusbritoda", totalAmount: 220.00, cat: "Iago", day: 7, installments: 2, sY: 2026, sM: 10, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-30' },
+        { desc: "PASSAGENS PARA SALVADOR", totalAmount: 1301.64, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "PASSEIO DE SAFARI", totalAmount: 3429.60, cat: "Lazer", day: 10, installments: 6, sY: 2026, sM: 3, group: 'JADY' },
         { desc: "PRESENTE DO ANDRÉ (LILI)", totalAmount: 359.91, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 9, group: 'LILI TORRES' },
-        { desc: "PRIMEIRO CARRO ALUGADO", totalAmount: 379.02, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "PRIMEIRO CARRO ALUGADO", totalAmount: 379.02, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "REFORMA DO SOFÁ DE CAXIAS", totalAmount: 575.00, cat: "Moradia", day: 12, installments: 5, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
         { desc: "REMÉDIO PARA CUPIM", totalAmount: 37.00, cat: "Saúde", day: 28, installments: 1, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
         { desc: "REMÉDIOS (MARCIA BRITO)", totalAmount: 246.09, cat: "Saúde", day: 28, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
         { desc: "RENEGOCIAR CARREFOUR", totalAmount: 5000.00, cat: "Dívidas", day: 12, installments: 16, sY: 2025, sM: 12, group: 'MARCIA BRITO' },
         { desc: "SANDÁLIA", totalAmount: 100.00, cat: "Jady", day: 10, installments: 2, sY: 2026, sM: 11, group: 'JADY' },
-        { desc: "SEGUNDO CARRO ALUGADO", totalAmount: 471.42, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "Mp *Myfood", totalAmount: 2499.96, cat: "Iago", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-30' }
+        { desc: "SEGUNDO CARRO ALUGADO", totalAmount: 471.42, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "Mp *Myfood", totalAmount: 2499.96, cat: "Iago", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-30' },
+        { desc: "EMPRÉSTIMO PARA PAGAR AS CONTAS DE OUTUBRO", totalAmount: 2281.25, cat: "Empréstimos", day: 4, installments: 5, sY: 2026, sM: 11, group: 'LILI TORRES' }
     ];
 
 

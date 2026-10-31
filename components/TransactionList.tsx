@@ -17,6 +17,7 @@ interface TransactionListProps {
     compact?: boolean;
     currentMonth?: number;
     currentYear?: number;
+    bankBalance?: number;
 }
 
 // Helper para ícones
@@ -140,7 +141,8 @@ const TransactionList: React.FC<TransactionListProps> = ({
     onUpdate, 
     compact = false,
     currentMonth = new Date().getMonth() + 1,
-    currentYear = new Date().getFullYear()
+    currentYear = new Date().getFullYear(),
+    bankBalance = 0
 }) => {
     const format = (v: number) => formatCurrency(v);
     
@@ -160,7 +162,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
     };
 
     const toggleSelectGroup = (items: Transaction[], groupTitle: string) => {
-        const itemIds = items.map(i => i.id);
+        const activeItems = items.filter(i => !i.skipped && !i.isSuspended);
+        const targetItems = activeItems.length > 0 ? activeItems : items;
+        const itemIds = targetItems.map(i => i.id);
         const allSelected = itemIds.every(id => selectedIds.includes(id));
         
         if (allSelected) {
@@ -272,11 +276,14 @@ const TransactionList: React.FC<TransactionListProps> = ({
                 const groupColors = getGroupColors(key);
                 const isExpanded = !!expandedGroups[key];
                 const groupItems = grouped[key] || [];
-                const groupTotalSum = groupItems.reduce((acc, i) => acc + (i.amount || 0), 0);
+                const activeGroupItems = groupItems.filter(i => !i.skipped && !i.isSuspended);
+                const groupTotalSum = activeGroupItems.reduce((acc, i) => acc + (i.amount || 0), 0);
+                const skippedCount = groupItems.filter(i => i.skipped || i.isSuspended).length;
                 const selectedGroupItems = groupItems.filter(i => selectedIds.includes(i.id));
                 const countSelectedInGroup = selectedGroupItems.length;
                 const selectedGroupTotalSum = selectedGroupItems.reduce((acc, i) => acc + (i.amount || 0), 0);
-                const allSelectedInGroup = groupItems.length > 0 && countSelectedInGroup === groupItems.length;
+                const itemsToCheck = activeGroupItems.length > 0 ? activeGroupItems : groupItems;
+                const allSelectedInGroup = itemsToCheck.length > 0 && itemsToCheck.every(i => selectedIds.includes(i.id));
 
                 return (
                 <div key={key} className="mb-6 animate-fadeIn">
@@ -289,10 +296,17 @@ const TransactionList: React.FC<TransactionListProps> = ({
                                 {formatDateHeader(key)}
                             </h3>
                             
-                            {/* TOTAL SOMA DA CATEGORIA - MESMA FONTE DO TÍTULO DA CATEGORIA */}
+                            {/* TOTAL SOMA DA CATEGORIA - SOMA APENAS CONTAS ATIVAS (LIGADAS) */}
                             <span className={`text-xs sm:text-sm font-black px-3 py-1 rounded-xl border shadow-sm tracking-tight ${groupColors.badge}`}>
                                 {formatCurrency(groupTotalSum)}
                             </span>
+
+                            {skippedCount > 0 && (
+                                <span className="text-[10px] sm:text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-sm">
+                                    <PowerOff size={11} strokeWidth={2.5} />
+                                    <span>{skippedCount} desligada{skippedCount > 1 ? 's' : ''}</span>
+                                </span>
+                            )}
 
                             {countSelectedInGroup > 0 && (
                                 <span className="text-[10px] sm:text-xs font-black bg-orange-500 text-slate-950 px-2.5 py-0.5 rounded-full uppercase tracking-tight shadow-sm flex items-center gap-1">
@@ -520,6 +534,51 @@ const TransactionList: React.FC<TransactionListProps> = ({
                 </div>
             );
             })}
+
+            {/* VISOR DE SOMA EM TEMPO REAL (PLANEJAMENTO) */}
+            <div className="fixed top-20 right-4 lg:right-8 z-[60] flex flex-col gap-2 pointer-events-none">
+                {/* Visor de Selecionados */}
+                {selectedTransactions.length > 0 && (
+                    <div className="bg-slate-900/90 backdrop-blur-md border-2 border-orange-500 p-2 px-4 rounded-2xl shadow-2xl animate-bounce-in pointer-events-auto flex flex-col items-end">
+                        <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">Selecionados</span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-xs font-black text-white/50">R$</span>
+                            <span className="text-xl lg:text-2xl font-black text-white tabular-nums tracking-tighter">
+                                {formatCurrency(selectedTotalSum).replace('R$', '').trim()}
+                            </span>
+                        </div>
+                        <span className="text-[9px] font-bold text-white/40 uppercase">{selectedTransactions.length} itens</span>
+                    </div>
+                )}
+
+                {/* Visor de Pendentes Ativos (O que falta pagar) */}
+                <div className="bg-slate-900/90 backdrop-blur-md border-2 border-rose-500/50 p-2 px-4 rounded-2xl shadow-2xl pointer-events-auto flex flex-col items-end transition-all hover:border-rose-500 animate-pulse-slow">
+                    <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest leading-none mb-1">A Pagar (ON)</span>
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-xs font-black text-white/50">R$</span>
+                        <span className="text-xl lg:text-2xl font-black text-white tabular-nums tracking-tighter">
+                            {formatCurrency(
+                                transactions
+                                    .filter(t => !t.paid && !t.skipped && !t.isSuspended)
+                                    .reduce((acc, t) => acc + (t.amount || 0), 0)
+                            ).replace('R$', '').trim()}
+                        </span>
+                    </div>
+                    <span className="text-[9px] font-bold text-white/40 uppercase">Total Pendente</span>
+                </div>
+
+                {/* Visor de Saldo em Conta (Santander Giro) */}
+                <div className="bg-slate-900/90 backdrop-blur-md border-2 border-emerald-500/50 p-2 px-4 rounded-2xl shadow-2xl pointer-events-auto flex flex-col items-end transition-all hover:border-emerald-500">
+                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest leading-none mb-1">Saldo em Conta</span>
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-xs font-black text-white/50">R$</span>
+                        <span className="text-xl lg:text-2xl font-black text-white tabular-nums tracking-tighter">
+                            {formatCurrency(bankBalance).replace('R$', '').trim()}
+                        </span>
+                    </div>
+                    <span className="text-[9px] font-bold text-white/40 uppercase">Santander</span>
+                </div>
+            </div>
 
             {/* FLOATING BETANO BET SLIP BAR */}
             {selectedTransactions.length > 0 && (
