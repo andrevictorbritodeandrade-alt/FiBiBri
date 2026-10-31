@@ -291,11 +291,11 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { desc: "ABASTECIMENTO 2", totalAmount: 150.00, cat: "Transporte", day: 7, installments: 1, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ACRÉSCIMO PASSAGEM AÉREA", totalAmount: 240.00, cat: "Lazer", day: 7, installments: 2, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ADESÃO DA SEGURADORA", totalAmount: 100.00, cat: "Moradia", day: 5, installments: 1, sY: 2026, sM: 9, group: 'MORADIA' },
-        { desc: "AIRBNB (HMT3Q9TBYB)", totalAmount: 1144.44, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB (hm2ydd2j9t)", totalAmount: 313.02, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB (hmepqps338)", totalAmount: 379.98, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB (hm5kaqjy4j)", totalAmount: 163.02, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
-        { desc: "AIRBNB (hmjhtc29yf)", totalAmount: 417.84, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (HMT3Q9TBYB)", totalAmount: 1144.44, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hm2ydd2j9t)", totalAmount: 570.06, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hmepqps338)", totalAmount: 379.98, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hm5kaqjy4j)", totalAmount: 162.96, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "AIRBNB (hmjhtc29yf)", totalAmount: 185.70, cat: "Estadias", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "ALINHAMENTO DO CARRO", totalAmount: 330.00, cat: "Transporte", day: 12, installments: 2, sY: 2026, sM: 9, group: 'MARCIA BRITO' },
         { desc: "CABESOM", totalAmount: 179.00, cat: "Outros", day: 28, installments: 2, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
         { desc: "CELULAR DA MARCELLY", totalAmount: 4628.88, cat: "Outros", day: 10, installments: 12, sY: 2026, sM: 3, group: 'MARCIA BISPO' },
@@ -337,16 +337,18 @@ export const generateMonthData = (year: number, month: number): MonthData => {
         { desc: "PASSAGENS AÉREAS JOBURG X CAPE TOWN", totalAmount: 1560.00, cat: "Viagens", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
         { desc: "PASSAGENS AÉREAS SP X JOBURG", totalAmount: 4038.96, cat: "Viagens", day: 4, installments: 8, sY: 2026, sM: 1, group: 'LILI TORRES' },
         { desc: "PASSAGENS DE ONIBUS RIO x SP", totalAmount: 438.00, cat: "Viagens", day: 12, installments: 5, sY: 2026, sM: 3, group: 'MARCIA BRITO' },
-        { desc: "PASSAGENS PARA SALVADOR", totalAmount: 1301.64, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "Matheusbritoda", totalAmount: 220.00, cat: "Iago", day: 7, installments: 2, sY: 2026, sM: 9, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-30' },
+        { desc: "PASSAGENS PARA SALVADOR", totalAmount: 1301.64, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "PASSEIO DE SAFARI", totalAmount: 3429.60, cat: "Lazer", day: 10, installments: 6, sY: 2026, sM: 3, group: 'JADY' },
         { desc: "PRESENTE DO ANDRÉ (LILI)", totalAmount: 359.91, cat: "Outros", day: 4, installments: 3, sY: 2026, sM: 9, group: 'LILI TORRES' },
-        { desc: "PRIMEIRO CARRO ALUGADO", totalAmount: 379.02, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "PRIMEIRO CARRO ALUGADO", totalAmount: 379.02, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
         { desc: "REFORMA DO SOFÁ DE CAXIAS", totalAmount: 575.00, cat: "Moradia", day: 12, installments: 5, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
         { desc: "REMÉDIO PARA CUPIM", totalAmount: 37.00, cat: "Saúde", day: 28, installments: 1, sY: 2026, sM: 4, group: 'MARCIA BRITO' },
         { desc: "REMÉDIOS (MARCIA BRITO)", totalAmount: 246.09, cat: "Saúde", day: 28, installments: 3, sY: 2026, sM: 5, group: 'MARCIA BRITO' },
         { desc: "RENEGOCIAR CARREFOUR", totalAmount: 5000.00, cat: "Dívidas", day: 12, installments: 16, sY: 2025, sM: 12, group: 'MARCIA BRITO' },
         { desc: "SANDÁLIA", totalAmount: 100.00, cat: "Jady", day: 10, installments: 2, sY: 2026, sM: 11, group: 'JADY' },
-        { desc: "SEGUNDO CARRO ALUGADO", totalAmount: 471.42, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 8, group: 'IAGO (CARTÃO NUBANK)' }
+        { desc: "SEGUNDO CARRO ALUGADO", totalAmount: 471.42, cat: "Viagens", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)' },
+        { desc: "Mp *Myfood", totalAmount: 2499.96, cat: "Iago", day: 7, installments: 6, sY: 2026, sM: 7, group: 'IAGO (CARTÃO NUBANK)', purchaseDate: '2026-09-30' }
     ];
 
 

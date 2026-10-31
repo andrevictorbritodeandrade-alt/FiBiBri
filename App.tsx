@@ -1798,114 +1798,61 @@ const App: React.FC = () => {
                 });
             }
 
-            // Ensure Conserto do Celular (parcela 1 de 2, R$ 110,00) and Abastecimento (R$ 310,00) for Iago in October 2026
-            const consertoCelularOct = cleanExpenses.find(e => e.description.toUpperCase().includes('CONSERTO DO CELULAR') || e.description.toUpperCase().includes('CONSERTO CELULAR'));
-            if (consertoCelularOct) {
-                consertoCelularOct.amount = 110.00;
-                consertoCelularOct.category = 'Iago';
-                consertoCelularOct.group = 'IAGO (CARTÃO NUBANK)';
-                consertoCelularOct.installments = { current: 1, total: 2 };
-                consertoCelularOct.dueDate = '2026-10-07';
-            } else {
-                cleanExpenses.push({
-                    id: 'exp_conserto_celular_iago_2026_10',
-                    description: 'CONSERTO DO CELULAR',
-                    amount: 110.00,
-                    category: 'Iago',
-                    paid: false,
-                    dueDate: '2026-10-07',
-                    installments: { current: 1, total: 2 },
+            // Iago's detailed expenses from October credit card statement
+            const iagoItems = [
+                { desc: "Claro Flex", amount: 44.90, date: "2026-10-06" },
+                { desc: "Mp *Myfood", amount: 416.66, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Airbnb * Hmepqps338", amount: 63.33, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Rentcars*Movida", amount: 63.17, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Airbnb * Hmt3q9tbyb", amount: 190.74, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Matheusbritoda", amount: 110.00, inst: { current: 2, total: 2 }, date: "2026-09-30" },
+                { desc: "Airbnb * Hmjhtc29yf", amount: 30.95, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Airbnb * Hm2ydd2j9t", amount: 95.01, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Rentcars", amount: 78.57, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Airbnb * Hm5kaqjy4j", amount: 27.16, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Gol Linhas A*Hqwsnk011", amount: 216.94, inst: { current: 4, total: 6 }, date: "2026-09-30" },
+                { desc: "Abastece ai", amount: 355.08, date: "2026-10-15" },
+                { desc: "Drogaria Pacheco", amount: 65.04, date: "2026-10-18" },
+                { desc: "Drogaria Pacheco", amount: 256.79, date: "2026-10-18" },
+                { desc: "Drogaria Pacheco", amount: 23.50, date: "2026-10-19" },
+                { desc: "Abastece ai", amount: 305.77, date: "2026-10-22" },
+                { desc: "Claro Flex", amount: 44.99, date: "2026-10-24" },
+                { desc: "Claro Flex", amount: 44.99, date: "2026-10-24" }
+            ];
+
+            // Filter out existing Iago/Nubank items to avoid duplicates
+            const filteredExpenses = cleanExpenses.filter(e => {
+                const norm = e.description.toUpperCase();
+                const isIago = e.group === 'IAGO (CARTÃO NUBANK)' || e.category === 'Iago' || norm.includes('IAGO');
+                return !isIago;
+            });
+
+            // Add the fresh items from the statement
+            iagoItems.forEach((item, idx) => {
+                filteredExpenses.push({
+                    id: `exp_iago_oct26_${idx}`,
+                    description: item.desc,
+                    amount: item.amount,
+                    category: "Iago",
+                    paid: true,
+                    paidAt: "2026-10-27", // Marked as paid today
+                    dueDate: item.date,
+                    purchaseDate: item.date,
+                    installments: item.inst || undefined,
                     group: 'IAGO (CARTÃO NUBANK)'
                 });
-            }
+            });
 
-            // Remove obsolete generic ABASTECIMENTO if present
-            const obsoleteAbastIdx = cleanExpenses.findIndex(e => e.description.toUpperCase().trim() === 'ABASTECIMENTO' && (e.group?.includes('IAGO') || e.category === 'Iago'));
-            if (obsoleteAbastIdx >= 0) {
-                cleanExpenses.splice(obsoleteAbastIdx, 1);
-            }
-
-            // Abastecimento 19/09 (R$ 307,46)
-            const abast19 = cleanExpenses.find(e => e.description.toUpperCase().includes('19/09') || (e.description.toUpperCase().includes('ABASTECIMENTO') && e.amount === 307.46));
-            if (abast19) {
-                abast19.description = 'ABASTECIMENTO (19/09)';
-                abast19.amount = 307.46;
-                abast19.category = 'Iago';
-                abast19.group = 'IAGO (CARTÃO NUBANK)';
-                abast19.dueDate = '2026-10-07';
-                abast19.purchaseDate = '2026-09-19';
-            } else {
-                cleanExpenses.push({
-                    id: 'exp_abastecimento_1909_iago_2026_10',
-                    description: 'ABASTECIMENTO (19/09)',
-                    amount: 307.46,
-                    category: 'Iago',
-                    paid: false,
-                    dueDate: '2026-10-07',
-                    purchaseDate: '2026-09-19',
-                    group: 'IAGO (CARTÃO NUBANK)'
-                });
-            }
-
-            // Abastecimento 29/09 (R$ 342,24)
-            const abast29 = cleanExpenses.find(e => e.description.toUpperCase().includes('29/09') && e.description.toUpperCase().includes('ABASTECIMENTO'));
-            if (abast29) {
-                abast29.description = 'ABASTECIMENTO (29/09)';
-                abast29.amount = 342.24;
-                abast29.category = 'Iago';
-                abast29.group = 'IAGO (CARTÃO NUBANK)';
-                abast29.dueDate = '2026-10-07';
-                abast29.purchaseDate = '2026-09-29';
-            } else {
-                cleanExpenses.push({
-                    id: 'exp_abastecimento_2909_iago_2026_10',
-                    description: 'ABASTECIMENTO (29/09)',
-                    amount: 342.24,
-                    category: 'Iago',
-                    paid: false,
-                    dueDate: '2026-10-07',
-                    purchaseDate: '2026-09-29',
-                    group: 'IAGO (CARTÃO NUBANK)'
-                });
-            }
-
-            // Caneta Emagrecedora DrogaRaia (R$ 490,00 - 29/09)
-            const canetaDrogaRaia = cleanExpenses.find(e => e.description.toUpperCase().includes('CANETA') || e.description.toUpperCase().includes('DROGARAIA') || e.amount === 490.00);
-            if (canetaDrogaRaia) {
-                canetaDrogaRaia.description = 'CANETA EMAGRECEDORA (DROGARAIA)';
-                canetaDrogaRaia.amount = 490.00;
-                canetaDrogaRaia.category = 'Iago';
-                canetaDrogaRaia.group = 'IAGO (CARTÃO NUBANK)';
-                canetaDrogaRaia.dueDate = '2026-10-07';
-                canetaDrogaRaia.purchaseDate = '2026-09-29';
-            } else {
-                cleanExpenses.push({
-                    id: 'exp_caneta_emagrecedora_iago_2026_10',
-                    description: 'CANETA EMAGRECEDORA (DROGARAIA)',
-                    amount: 490.00,
-                    category: 'Iago',
-                    paid: false,
-                    dueDate: '2026-10-07',
-                    purchaseDate: '2026-09-29',
-                    group: 'IAGO (CARTÃO NUBANK)'
-                });
-            }
-
-            // Ensure Aluguel, Internet, and Iago's values are marked as paid in October 2026
-            cleanExpenses.forEach(e => {
+            // Ensure Aluguel and Internet are marked as paid
+            filteredExpenses.forEach(e => {
                 const norm = e.description.toUpperCase().trim();
                 if (norm === 'ALUGUEL' || norm.includes('INTERNET')) {
                     e.paid = true;
                     if (!e.paidAt) e.paidAt = '2026-10-01';
                 }
-                if (e.group === 'IAGO (CARTÃO NUBANK)' || e.category === 'Iago' || norm.includes('IAGO')) {
-                    e.paid = true;
-                    if (!e.paidAt) e.paidAt = '2026-10-07';
-                }
             });
 
-            // Exclude Seguro do Carro for October 2026 (não tem que pagar este mês)
-            data.expenses = cleanExpenses.filter(e => !e.description.toUpperCase().trim().includes('SEGURO DO CARRO'));
+            data.expenses = filteredExpenses.filter(e => !e.description.toUpperCase().trim().includes('SEGURO DO CARRO'));
 
             // Incomes for October 2026
             const cleanIncomes: Transaction[] = canonicalOct.incomes.map(inc => {
