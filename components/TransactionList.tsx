@@ -578,6 +578,36 @@ const TransactionList: React.FC<TransactionListProps> = ({
                     </div>
                     <span className="text-[9px] font-bold text-white/40 uppercase">Santander</span>
                 </div>
+
+                {/* Visor de Diferença (Saldo em Conta - A Pagar) */}
+                {(() => {
+                    const pendingActiveTotal = transactions
+                        .filter(t => !t.paid && !t.skipped && !t.isSuspended)
+                        .reduce((acc, t) => acc + (t.amount || 0), 0);
+                    const difference = bankBalance - pendingActiveTotal;
+                    const isPositive = difference >= 0;
+
+                    return (
+                        <div className={`backdrop-blur-md border-2 p-2 px-4 rounded-2xl shadow-2xl pointer-events-auto flex flex-col items-end transition-all ${
+                            isPositive 
+                                ? 'bg-blue-950/95 border-blue-500 shadow-blue-500/20' 
+                                : 'bg-rose-950/95 border-rose-500 shadow-rose-500/20 animate-pulse-slow'
+                        }`}>
+                            <span className={`text-[10px] font-black uppercase tracking-widest leading-none mb-1 ${isPositive ? 'text-blue-300' : 'text-rose-300'}`}>
+                                Diferença
+                            </span>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-xs font-black text-white/50">R$</span>
+                                <span className="text-xl lg:text-2xl font-black text-white tabular-nums tracking-tighter">
+                                    {formatCurrency(difference).replace('R$', '').trim()}
+                                </span>
+                            </div>
+                            <span className={`text-[9px] font-bold uppercase ${isPositive ? 'text-blue-300/80' : 'text-rose-300/80'}`}>
+                                {isPositive ? 'Sobra / Positivo' : 'Falta / Negativo'}
+                            </span>
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* FLOATING BETANO BET SLIP BAR */}

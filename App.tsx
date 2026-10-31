@@ -74,20 +74,8 @@ const App: React.FC = () => {
     // App State
     // Automatic cycle shifting: when Marcelly receives her salary (from the 27th of the month onwards),
     // the application immediately opens on the upcoming month (e.g. from Oct 27 onwards, it opens on November)
-    const [currentMonth, setCurrentMonth] = useState(() => {
-        const now = new Date();
-        if (now.getDate() >= 27) {
-            return now.getMonth() === 11 ? 1 : now.getMonth() + 2;
-        }
-        return now.getMonth() + 1;
-    });
-    const [currentYear, setCurrentYear] = useState(() => {
-        const now = new Date();
-        if (now.getDate() >= 27 && now.getMonth() === 11) {
-            return now.getFullYear() + 1;
-        }
-        return now.getFullYear();
-    });
+    const [currentMonth, setCurrentMonth] = useState(12);
+    const [currentYear, setCurrentYear] = useState(2026);
     const [monthData, setMonthData] = useState<MonthData | null>(null);
     const [view, setView] = useState<'home' | 'transactions' | 'statistics' | 'settlements' | 'flightPlan' | 'savings'>('transactions');
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -380,6 +368,21 @@ const App: React.FC = () => {
                 return preservedStateByDesc.get(normDesc);
             }
             return undefined;
+        };
+
+        const applyPreservedState = (item: Transaction) => {
+            const preserved = getPreservedState(item);
+            if (preserved) {
+                if (preserved.skipped !== undefined) item.skipped = preserved.skipped;
+                if (preserved.isSuspended !== undefined) item.isSuspended = preserved.isSuspended;
+                if (preserved.suspendedUntil !== undefined) item.suspendedUntil = preserved.suspendedUntil;
+                if (preserved.userModifiedPaid) {
+                    item.paid = preserved.paid;
+                    item.paidAt = preserved.paidAt;
+                    item.userModifiedPaid = preserved.userModifiedPaid;
+                }
+            }
+            return item;
         };
 
         const originalUserModifications = new Map();
@@ -1087,14 +1090,14 @@ const App: React.FC = () => {
                     data.incomes.push({
                         id: "inc_a_2026_12",
                         description: "SALÁRIO ANDRÉ (Recebido: 01/12)",
-                        amount: 3219.07,
+                        amount: 3158.99,
                         paid: true,
                         date: "2026-12-01",
                         dueDate: "2026-12-01",
                         category: "Salário"
                     });
                 } else {
-                    data.incomes = data.incomes.map(i => (i.description.toUpperCase().includes("SALÁRIO ANDRÉ") || i.description.toUpperCase().includes("SALARIO ANDRE")) ? { ...i, amount: 3219.07 } : i);
+                    data.incomes = data.incomes.map(i => (i.description.toUpperCase().includes("SALÁRIO ANDRÉ") || i.description.toUpperCase().includes("SALARIO ANDRE")) ? { ...i, amount: 3158.99 } : i);
                 }
 
                 if (!hasSalMarcelly) {
@@ -1126,12 +1129,12 @@ const App: React.FC = () => {
                     category: "13º Salário"
                 });
 
-                // Andre: 7/12 (started in June: Jun, Jul, Aug, Sep, Oct, Nov, Dec)
-                // (3219.07 / 12) * 7 = 1877.79
+                // Andre: 7/12 based on 3158.99 base
+                const andre13Amount = Math.round((3158.99 / 12 * 7) * 100) / 100;
                 data.incomes.push({
                     id: "inc_13_a_2026",
                     description: "13º SALÁRIO - ANDRÉ (7/12)",
-                    amount: 1877.79,
+                    amount: andre13Amount,
                     paid: false,
                     date: "2026-12-20",
                     dueDate: "2026-12-20",
@@ -1824,11 +1827,12 @@ const App: React.FC = () => {
         if (year === 2026 && month === 11) {
             const canonicalNov = generateMonthData(2026, 11);
             
-            // 1. Set Bank Balance
+            // 1. Set Bank Balance (Including Mumbuca R$ 598 coming on day 10)
+            const santanderWithMumbuca = 2891.73 + 598.00;
             if (!data.bankReserves) {
-                data.bankReserves = { santander: 2891.73, inter: 0, sofisa: 0 };
+                data.bankReserves = { santander: santanderWithMumbuca, inter: 0, sofisa: 0 };
             } else {
-                data.bankReserves.santander = 2891.73;
+                data.bankReserves.santander = santanderWithMumbuca;
             }
 
             // 2. Build map of existing user paid & skipped statuses by ID and description to preserve them
@@ -1921,13 +1925,40 @@ const App: React.FC = () => {
                 });
             });
 
-            // 6. Update Incomes (Salaries Paid)
+            // 6. Ensure Terapia da Marcelly in Moradia group for November (R$ 280,00)
+            const terapiaNov = cleanExpenses.find(e => {
+                const d = e.description.toUpperCase();
+                return d.includes('TERAPIA') || d.includes('PSICÓLOGA') || d.includes('PSICOLOGA');
+            });
+            if (terapiaNov) {
+                terapiaNov.description = 'TERAPIA DA MARCELLY';
+                terapiaNov.amount = 280.00;
+                terapiaNov.group = 'MORADIA';
+                terapiaNov.category = 'Saúde';
+                applyPreservedState(terapiaNov);
+            } else {
+                const newTerapia = {
+                    id: 'terapia_marcelly_nov26',
+                    description: 'TERAPIA DA MARCELLY',
+                    amount: 280.00,
+                    category: 'Saúde',
+                    paid: false,
+                    dueDate: '2026-11-15',
+                    group: 'MORADIA'
+                };
+                applyPreservedState(newTerapia);
+                cleanExpenses.push(newTerapia);
+            }
+
+            // 7. Update Incomes (Salaries Paid)
             const cleanIncomes: Transaction[] = canonicalNov.incomes.map(inc => {
                 const norm = inc.description.toUpperCase().trim();
                 const isSalary = norm.includes('SALÁRIO') || norm.includes('SALARIO');
                 if (isSalary) {
+                    const isAndre = norm.includes('ANDRÉ') || norm.includes('ANDRE');
                     return {
                         ...inc,
+                        amount: isAndre ? 3158.99 : inc.amount,
                         paid: true,
                         paidAt: norm.includes('MARCELLY') ? '2026-10-27' : '2026-10-31',
                         userModifiedPaid: true
@@ -1946,6 +1977,14 @@ const App: React.FC = () => {
         }
 
         // SYSTEM RULES: Apply these regardless of whether the user has modified data
+        if (data.expenses) {
+            data.expenses.forEach(e => {
+                const desc = e.description.toUpperCase();
+                if (desc.includes('TERAPIA DA MARCELLY') || desc.includes('TERAPIA MARCELLY') || (desc.includes('TERAPIA') && desc.includes('MARCELLY')) || desc.includes('PSICÓLOGA DA MARCELLY') || desc.includes('PSICOLOGA DA MARCELLY')) {
+                    e.group = 'MORADIA';
+                }
+            });
+        }
         
         // Filter out any "CONTAS DE SETEMBRO" belonging to MARCIA BISPO anywhere in the application
         if (data.expenses) {
@@ -1971,8 +2010,9 @@ const App: React.FC = () => {
                 claudioLoan.category = 'Empréstimos';
                 claudioLoan.amount = amount;
                 claudioLoan.installments = { current, total };
+                applyPreservedState(claudioLoan);
             } else {
-                data.expenses.push({
+                const newItem = {
                     id: `fin_EMPRÉSTIMOPARAPAGARASCONTASDESETEMBRO_${current}`,
                     description: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO',
                     amount: amount,
@@ -1981,7 +2021,9 @@ const App: React.FC = () => {
                     dueDate: `2026-${month.toString().padStart(2, '0')}-15`,
                     installments: { current, total },
                     group: 'CLAUDIO SILVA'
-                });
+                };
+                applyPreservedState(newItem);
+                data.expenses.push(newItem);
             }
         } else {
             data.expenses = data.expenses.filter(e => !(e.description.toUpperCase().includes('CONTAS DE SETEMBRO') && e.group === 'CLAUDIO SILVA'));
@@ -2000,8 +2042,9 @@ const App: React.FC = () => {
                     jadyLoan.category = 'Empréstimos';
                     jadyLoan.amount = 400.00;
                     jadyLoan.installments = { current, total };
+                    applyPreservedState(jadyLoan);
                 } else {
-                    data.expenses.push({
+                    const newItem = {
                         id: `fin_JADY_EMPRÉSTIMOPARAPAGARASCONTASDESETEMBRO_${current}`,
                         description: 'EMPRÉSTIMO PARA PAGAR AS CONTAS DE SETEMBRO',
                         amount: 400.00,
@@ -2010,7 +2053,9 @@ const App: React.FC = () => {
                         dueDate: `${year}-${month.toString().padStart(2, '0')}-10`,
                         installments: { current, total },
                         group: 'JADY'
-                    });
+                    };
+                    applyPreservedState(newItem);
+                    data.expenses.push(newItem);
                 }
             } else {
                 data.expenses = data.expenses.filter(e => !(e.description.toUpperCase().includes('CONTAS DE SETEMBRO') && e.group === 'JADY'));
@@ -2030,8 +2075,9 @@ const App: React.FC = () => {
                     liliNordeste.category = 'Empréstimos';
                     liliNordeste.amount = 335.90;
                     liliNordeste.installments = { current, total };
+                    applyPreservedState(liliNordeste);
                 } else {
-                    data.expenses.push({
+                    const newItem = {
                         id: `fin_EMPRÉSTIMOVIAGEMNORDESTELILI_${current}`,
                         description: 'EMPRÉSTIMO VIAGEM NORDESTE (LILI)',
                         amount: 335.90,
@@ -2040,7 +2086,9 @@ const App: React.FC = () => {
                         dueDate: `${year}-${month.toString().padStart(2, '0')}-04`,
                         installments: { current, total },
                         group: 'LILI TORRES'
-                    });
+                    };
+                    applyPreservedState(newItem);
+                    data.expenses.push(newItem);
                 }
             } else {
                 data.expenses = data.expenses.filter(e => !(e.description.toUpperCase().includes('NORDESTE') && e.group === 'LILI TORRES'));
@@ -2061,8 +2109,9 @@ const App: React.FC = () => {
                 sandaliaJady.group = 'JADY';
                 sandaliaJady.installments = { current, total: 2 };
                 sandaliaJady.dueDate = `2026-${month.toString().padStart(2, '0')}-10`;
+                applyPreservedState(sandaliaJady);
             } else {
-                data.expenses.push({
+                const newItem = {
                     id: `fin_SANDÁLIA_JADY_${current}`,
                     description: 'SANDÁLIA',
                     amount: 50.00,
@@ -2071,7 +2120,9 @@ const App: React.FC = () => {
                     dueDate: `2026-${month.toString().padStart(2, '0')}-10`,
                     installments: { current, total: 2 },
                     group: 'JADY'
-                });
+                };
+                applyPreservedState(newItem);
+                data.expenses.push(newItem);
             }
         } else {
             // Ensure no stray Sandália for JADY in other months
@@ -2089,9 +2140,9 @@ const App: React.FC = () => {
                 liliLoanNov.installments = { current: 4, total: 5 };
                 liliLoanNov.group = 'LILI TORRES';
                 liliLoanNov.category = 'Empréstimos';
-                liliLoanNov.skipped = false;
+                applyPreservedState(liliLoanNov);
             } else {
-                data.expenses.push({
+                const newItem = {
                     id: 'fin_EMPRÉSTIMOCOMLILI_nov26_4_5',
                     description: 'EMPRÉSTIMO COM LILI',
                     amount: 800.00,
@@ -2100,7 +2151,9 @@ const App: React.FC = () => {
                     dueDate: '2026-11-04',
                     installments: { current: 4, total: 5 },
                     group: 'LILI TORRES'
-                });
+                };
+                applyPreservedState(newItem);
+                data.expenses.push(newItem);
             }
 
             // Final safety filter for Iago group in November 2026 to ensure exact total R$ 2078,51
@@ -2117,24 +2170,100 @@ const App: React.FC = () => {
         }
 
         if (year === 2026 && month === 12) {
+            // 1. Lili Loan: Parcela 4 de 5 (R$ 800,00)
             const liliLoanDec = data.expenses.find(e => e.description.toUpperCase().includes('EMPRÉSTIMO COM LILI') || e.description.toUpperCase().includes('EMPRESTIMO COM LILI'));
             if (liliLoanDec) {
                 liliLoanDec.amount = 800.00;
-                liliLoanDec.installments = { current: 5, total: 5 };
+                liliLoanDec.installments = { current: 4, total: 5 };
                 liliLoanDec.group = 'LILI TORRES';
                 liliLoanDec.category = 'Empréstimos';
-                liliLoanDec.skipped = false;
+                applyPreservedState(liliLoanDec);
             } else {
-                data.expenses.push({
-                    id: 'fin_EMPRÉSTIMOCOMLILI_dec26_5_5',
+                const newItem = {
+                    id: 'fin_EMPRÉSTIMOCOMLILI_dec26_4_5',
                     description: 'EMPRÉSTIMO COM LILI',
                     amount: 800.00,
                     category: 'Empréstimos',
                     paid: false,
                     dueDate: '2026-12-04',
-                    installments: { current: 5, total: 5 },
+                    installments: { current: 4, total: 5 },
                     group: 'LILI TORRES'
-                });
+                };
+                applyPreservedState(newItem);
+                data.expenses.push(newItem);
+            }
+
+            // 2. Moradia: Aluguel de Novembro (11/12, R$ 1300) and Aluguel de Dezembro (12/12, R$ 1300)
+            const hasAluguelNov = data.expenses.some(e => e.description.toUpperCase().includes('ALUGUEL DE NOVEMBRO') || (e.description.toUpperCase() === 'ALUGUEL' && e.installments?.current === 11));
+            if (!hasAluguelNov) {
+                const genericAluguel = data.expenses.find(e => e.description.toUpperCase() === 'ALUGUEL' && e.group === 'MORADIA');
+                if (genericAluguel) {
+                    genericAluguel.description = 'ALUGUEL DE NOVEMBRO';
+                    genericAluguel.amount = 1300.00;
+                    genericAluguel.installments = { current: 11, total: 12 };
+                    genericAluguel.group = 'MORADIA';
+                    applyPreservedState(genericAluguel);
+                } else {
+                    const itemNov = {
+                        id: 'aluguel_nov_26',
+                        description: 'ALUGUEL DE NOVEMBRO',
+                        amount: 1300.00,
+                        category: 'Moradia',
+                        paid: false,
+                        dueDate: '2026-12-05',
+                        installments: { current: 11, total: 12 },
+                        group: 'MORADIA'
+                    };
+                    applyPreservedState(itemNov);
+                    data.expenses.push(itemNov);
+                }
+            }
+
+            const hasAluguelDec = data.expenses.some(e => e.description.toUpperCase().includes('ALUGUEL DE DEZEMBRO'));
+            if (!hasAluguelDec) {
+                const itemDec = {
+                    id: 'aluguel_dec_26',
+                    description: 'ALUGUEL DE DEZEMBRO',
+                    amount: 1300.00,
+                    category: 'Moradia',
+                    paid: false,
+                    dueDate: '2026-12-10',
+                    installments: { current: 12, total: 12 },
+                    group: 'MORADIA'
+                };
+                applyPreservedState(itemDec);
+                data.expenses.push(itemDec);
+            }
+
+            // 3. Marcia Brito: October bills left unpaid (R$ 1710,25) + December forecast (R$ 565,00)
+            const hasContasOutubroMB = data.expenses.some(e => e.description.toUpperCase().includes('CONTAS DE OUTUBRO') && e.group === 'MARCIA BRITO');
+            if (!hasContasOutubroMB) {
+                const itemOctMB = {
+                    id: 'mb_contas_out_26',
+                    description: 'CONTAS DE OUTUBRO (MARCIA BRITO)',
+                    amount: 1710.25,
+                    category: 'Outros',
+                    paid: false,
+                    dueDate: '2026-12-12',
+                    group: 'MARCIA BRITO'
+                };
+                applyPreservedState(itemOctMB);
+                data.expenses.push(itemOctMB);
+            }
+
+            const hasContasDezMB = data.expenses.some(e => e.description.toUpperCase().includes('CONTAS DE DEZEMBRO') && e.group === 'MARCIA BRITO');
+            if (!hasContasDezMB) {
+                const itemDecMB = {
+                    id: 'mb_contas_dez_26',
+                    description: 'CONTAS DE DEZEMBRO (MARCIA BRITO)',
+                    amount: 565.00,
+                    category: 'Outros',
+                    paid: false,
+                    dueDate: '2026-12-15',
+                    group: 'MARCIA BRITO'
+                };
+                applyPreservedState(itemDecMB);
+                data.expenses.push(itemDecMB);
             }
         }
 
@@ -2152,7 +2281,8 @@ const App: React.FC = () => {
                                     i.amount === 3100.00;
                 
                 if (isAndreSalary) {
-                    return { ...i, amount: 3219.07 };
+                    const amt = (year === 2026 && month === 11) ? 3158.99 : 3219.07;
+                    return { ...i, amount: amt };
                 }
                 return i;
             });
@@ -2168,12 +2298,17 @@ const App: React.FC = () => {
                  data.incomes.push({
                      id: "inc_a_2026_12",
                      description: "SALÁRIO ANDRÉ",
-                     amount: 3219.07,
+                     amount: 3158.99,
                      paid: false,
                      date: "2026-12-01",
                      dueDate: "2026-12-01",
                      category: "Salário"
                  });
+             } else {
+                 const salAndre = data.incomes.find(i => i.id === "inc_a_2026_12" || i.description.toUpperCase().includes("SALÁRIO ANDRÉ") || i.description.toUpperCase().includes("SALARIO ANDRE"));
+                 if (salAndre) {
+                     salAndre.amount = 3158.99;
+                 }
              }
 
              if (!hasSalMarcelly) {
@@ -2205,11 +2340,12 @@ const App: React.FC = () => {
                  category: "13º Salário"
              });
 
-             // Andre: 7/12
+             // Andre: 7/12 based on 3158.99 base
+             const andre13Amount = Math.round((3158.99 / 12 * 7) * 100) / 100;
              data.incomes.push({
                  id: "inc_13_a_2026",
                  description: "13º SALÁRIO - ANDRÉ (7/12)",
-                 amount: 1877.79,
+                 amount: andre13Amount,
                  paid: false,
                  date: "2026-12-20",
                  dueDate: "2026-12-20",
